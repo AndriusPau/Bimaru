@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 module Types (
-    Document(..), Check(..)
+    Document(..), Check(..), Coord(..)
 ) where
 import Data.Yaml as Y
 import Data.HashMap.Strict as HMS
