@@ -53,7 +53,6 @@ gameStart (State l) d = State $ (numberOfHints ++ occupiedCols ++ occupiedRows) 
 --gameStart s d =
 ---------------------------------------------------------------------------------------------------
 -}
-
 ---------------------------------------------------------------------------------------------------
 -- State settings
 data State = State [(String, Document)]
@@ -68,62 +67,142 @@ emptyState = State []
 -- This adds game data to initial state
 gameStart :: State -> Document -> State
 gameStart (State l) (DMap ((s, d) : xs)) =
-  if s /= "game_setup_id"
-    then gameStart (State $ (s, d) : l) (DMap xs)
-    else State $ (s, d) : l
+  if s == "game_setup_id"
+    then State ((s, d) : l)
+    else gameStart (State ((s, d) : l)) (DMap xs)
 gameStart _ _ = emptyState
+
 ---------------------------------------------------------------------------------------------------
 
 -- Render implementation
 
 -- IMPLEMENT
--- renders your game board
--- Render gets the current gamestate and turns it to a string to be outputted.
--- Implementing a Render function which will hopefully make the gamestate string actually readable.
+-- Renders your game board
+-- Render gets the current gamestate and turns it to a string to be printed to the screen.
+-- State - The current gamestate.
+-- String - The result string that has the whole gameboard and other information for displayment.
 render :: State -> String
-render = show
+render st = "    " ++ drawGridTop st ++ "\n\n" ++ drawGrid st [] 0
+
+-- This function draws the row data and the whole grid section of the map (without the top data).
+-- Meant to be used by the render function and uses drawGrid (recursively), drawGridLine functions.
+-- State - The current gamestate.
+-- String - A temporary string that saves the grid data. (Use [] when calling this function)
+-- Int - Accumulator, which counts which row we are on. (Use 0 when calling this function)
+-- String - The result string that has the row data and the grid itself.
+drawGrid :: State -> String -> Int -> String
+drawGrid st rez y =
+  if y < 10
+    then drawGrid st (rez ++ drawGridLine st y) (y + 1)
+    else rez
+
+
+-- This function draws a single line of the grid.
+-- Meant to be used by the drawGrid function and uses drawGridSide, drawGridRow functions.
+-- State - The current gamestate.
+-- Int - Accumulator, which counts which row we are on.
+-- String - The result string that has the line that is meant to be the output.
+drawGridLine :: State -> Int -> String
+drawGridLine st r = (drawGridSide st r : "   ") ++ drawGridRow st [] 0 0 ++ "\n"
+
+
+-- This function draws the map side of the grid. 
+-- Meant to be used by the drawGridLine function and uses drawGridRow (recursively), drawGridCell functions.
+-- State - The current gamestate.
+-- Sring - A temporary string that saves the row data.
+-- Int - Accumulator, which counts which collumn we are on.
+-- Int - Accumulator, which counts which row we are on.
+-- String - The result string that has the row data for a single grid row.
+drawGridRow :: State -> String -> Int -> Int -> String
+drawGridRow st rez x y =
+  if x < 10
+    then drawGridRow st (rez ++ [drawGridCell st x y] ++ " ") (x + 1) y
+    else rez
+
+-- This function draws a single cell in the grid.
+-- Meant to be used by the drawGridRow function and uses getToggleValue, getHintValue functions.
+-- Defines if the cell is toggled, hinted at or empty.
+-- State - The current gamestate.
+-- Int - Accumulator, which counts which collumn we are on.
+-- Int - Accumulator, which counts which row we are on.
+-- Char - The result char that shows the current state of the cell.
+drawGridCell :: State -> Int -> Int -> Char
+drawGridCell st x y =
+  -- If toggle is enabled in this cell
+  if False
+    -- Then set the character in this cell to be T
+    then 'T'
+    -- Else,
+    else
+      -- If hint is enabled in this cell
+      if False
+        -- Then set the character in this cell to be H
+        then 'H'
+        -- Else, set the character to the standart position
+        else '0'
+drawGridCell _ _ _ = 'F'
+
 {-
-render (State ((s, d) : xs)) =
-  case s of
-    "game_setup_id" -> show d ++ "\n" : render (State xs)
-    "occupied_rows" -> show d ++ "\n"
-    "occupied_cols" -> show d ++ "\n"
-    "number_of_hints" -> show d ++ "\n" 
+--To be implemented after the implementation of the Toggle and Hint functions.
+
+getToggleValue ::
+getToggleValue = 
+
+
+getHintValue ::
+getHIntValue = 
 -}
 
--- IMPLEMENT drawGridLine, drawGridSide, drawGridBottom,
--- After these functions are applied, show cannot be used any further.
 
--- [(Int, Int)] - toggle coordinates.
--- [(Int, Int)] - hint coordinates.
--- Int - Accumulator, which counts which line we are on. 
--- [Char] - The row of chars that will be outputted.
-drawGridLine :: [(Int, Int)] -> [(Int, Int)] -> Int -> [Char]
-drawGridLine [(x1, y1)] [(x2, y2)] z = show x1
-drawGridLine [(_, _)] [(_, _)] _ = []
-
-
--- [Int] - occupied_rows list
+-- This draws the side (occupied_rows) information on the board.
+-- Meant to be used by the drawGridLine function and uses drawGridSide (recursively), getSingleDIntValue functions.
+-- State - The current gamestate.
 -- Int - Accumulator which counts which line we are on.
--- Char - The number that will be written on the side of the board.
-drawGridSide :: [Int] -> Int -> Char
-drawGridSide [] _ = ' '
+-- Char - The result char that will be written on the side of the board.
+drawGridSide :: State -> Int -> Char
+drawGridSide (State ((st, doc) : xs)) r =
+  if st == "occupied_rows"
+    then getSingleDIntValue (show doc) r
+    else drawGridSide (State xs) r
+drawGridSide _ _ = ' '
 
+-- This gets a single char from the gamestate to put on the side (occupied_rows) information part of the board.
+-- Meant to be used by the drawGridSide function and uses the getDIntValue function.
+-- String - the document string, that needs to be parsed.
+-- Int - Accumulator, which counts which line we are on.
+-- Char - the result char that will be at the side of the grid, which represents occupied_rows
+getSingleDIntValue :: String -> Int -> Char
+getSingleDIntValue doc r = getDIntValue doc [] [] !! r
 
--- [String] - occupied_cols list
--- [Char] - Temporary function list
--- [Char] - The row of chars that will be at the bottom of the grid, which represents occupied_cols
-drawGridBottom :: String -> [Char] -> [Char]
-drawGridBottom (x : xs) l = drawGridBottom xs l
+-- This draws the top (occupied_cols) information on the board.
+-- Meant to be used by the render function and uses drawGridTop (recursively), getDIntValue functions.
+-- State - The current gamestate.
+-- String - The result string that will be written on the top of the board.
+drawGridTop :: State -> String
+drawGridTop (State ((st, doc) : xs)) =
+  if st == "occupied_cols"
+    then foldl (\s x -> s ++ (x : " ")) [] (getDIntValue (show doc) [] [])
+    else drawGridTop (State xs)
+drawGridTop _ = []
 
-
--- where
--- [occupiedCols]
--- [occupiedRows]
--- [[currentMap]]
-
--- show l
-
+-- This gets a whole string of the gamestate information, which is shown at the top and the left side of the board.
+-- Meant to be used by drawGridTop, getSingleDIntValue functions and uses the getDIntValue (recursively) function.
+-- String - The document string, that needs to be parsed.
+-- String - A temporary recursive string that keeps track of what we are reading.
+-- String - A temporary recursive string that keeps track of what result we have collected.
+-- String - The result string that is filled with chained (no whitespace characters) side information values.
+getDIntValue :: String -> String -> String -> String
+getDIntValue (x : xs) str rez =
+  if x /= ']'
+    then
+      if length str == 9
+        then
+          if str == "DInteger "
+            then getDIntValue xs [] (rez ++ [x])
+            else getDIntValue xs (tail str ++ [x]) rez
+        else getDIntValue xs (str ++ [x]) rez
+    else rez
+getDIntValue _ _ _ = "test"
 
 ---------------------------------------------------------------------------------------------------
 -- Functions that currently do nothing
@@ -143,6 +222,7 @@ toggle (State l) t = State l
 -- Adds hint data to the game state
 hint :: State -> Document -> State
 hint (State l) h = State l
+
 ---------------------------------------------------------------------------------------------------
 
 {-
