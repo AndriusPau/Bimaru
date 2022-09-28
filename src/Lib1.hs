@@ -13,46 +13,6 @@ where
 
 import Types
 
-{-
----------------------------------------------------------------------------------------------------
--- Ignore this code fragment
----------------------------------------------------------------------------------------------------
--- This is a state of your game.
--- It must contain all values you might need during a game:
--- number of occupied rows/cols, hints, occupied cells,..
--- You can change the right hand side as you wish but please
--- keep the type name as is
-data State = State {
-    numberOfHints :: Int,
-    occupiedCols :: [Int],
-    occupiedRows :: [Int],
-    hints :: [Coord],
-    toggles :: [Coord],
-    position :: [(Coord, Char)]
-    }
-    deriving Show
-
--- IMPLEMENT
--- This is very initial state of your program
-emptyState :: State
-emptyState = State []
-
--- IMPLEMENT
--- This adds game data to initial state
-gameStart :: State -> Document -> State
-gameStart (State l) d = State $ (numberOfHints ++ occupiedCols ++ occupiedRows) : l
---"Game started: " ++ "|||" ++ numberOfHints ++ "|||" ++ occupiedCols ++ "|||" ++ occupiedRows ++ "|||" ++ gameId
-    where
-        doc = show d
-        numberOfHints = doc !! 34 : doc !! 35 : " "
-        occupiedCols = doc !! 71 : doc !! 82 : doc !! 93 : doc !! 104 : doc !! 115 : doc !! 126 : doc !! 137 : doc !! 148 : doc !! 159 : doc !! 170 : " "
-        occupiedRows = doc !! 207 : doc !! 218 : doc !! 229 : doc !! 240 : doc !! 251 : doc !! 262 : doc !! 273 : doc !! 284 : doc !! 295 : doc !! 306 : " "
-        -- gameId = take 36 $ drop 336 doc
-
---gameStart :: State -> Document -> State
---gameStart s d =
----------------------------------------------------------------------------------------------------
--}
 ---------------------------------------------------------------------------------------------------
 -- State settings
 data State = State [(String, Document)]
