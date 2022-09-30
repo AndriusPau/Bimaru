@@ -13,6 +13,7 @@ where
 
 import Types
 
+
 ---------------------------------------------------------------------------------------------------
 -- State settings
 data State = State [(String, Document)]
@@ -28,8 +29,9 @@ emptyState = State []
 gameStart :: State -> Document -> State
 gameStart (State l) (DMap ((s, d) : xs)) =
   if s == "game_setup_id"
-    then State ((s, d) : l)
-    else gameStart (State ((s, d) : l)) (DMap xs)
+    then State (("toggles", DString []) : ((s, d) : l))
+    else gameStart (State
+    ((s, d) : l)) (DMap xs)
 gameStart _ _ = emptyState
 
 ---------------------------------------------------------------------------------------------------
@@ -42,7 +44,8 @@ gameStart _ _ = emptyState
 -- State - The current gamestate.
 -- String - The result string that has the whole gameboard and other information for displayment.
 render :: State -> String
-render st = "    " ++ drawGridTop st ++ "\n\n" ++ drawGrid st [] 0
+-- render st = "    " ++ drawGridTop st ++ "\n\n" ++ drawGrid st [] 0
+render = show
 
 -- This function draws the row data and the whole grid section of the map (without the top data).
 -- Meant to be used by the render function and uses drawGrid (recursively), drawGridLine functions.
@@ -175,8 +178,36 @@ mkCheck _ = Check []
 -- IMPLEMENT
 -- Toggle state's value
 -- Receive raw user input tokens
+
 toggle :: State -> [String] -> State
-toggle (State l) t = State l
+toggle (State ((s, doc) : xs)) str =
+  if s == "toggles"
+    then State ((s, setToggle doc (concat str)) : xs)
+    else toggle (State xs) str
+toggle _ _ = emptyState
+
+setToggle :: Document -> String -> Document
+setToggle doc str = DString (readToggle (drop 9 (show doc)) (filter checkDigit str) [] 0)
+
+readToggle :: String -> String -> String -> Int -> String
+readToggle (xD : yD : xsD) (xU : yU : xsU) rez rep
+  | xD /= '"' =
+    if (xD == xU) && (yD == yU)
+      then readToggle xsD (xU : yU : xsU) rez (rep + 1)
+      else readToggle xsD (xU : yU : xsU) (rez ++ [xD] ++ [yD]) rep
+  | rep == 0 = rez ++ [xU] ++ [yU]
+  | otherwise = rez
+
+readToggle ['\"'] (xU : yU : xsU) rez rep = 
+  if rep == 0  
+    then rez ++ xU : [yU]
+    else rez
+readToggle _ _ _ _ = ""
+
+checkDigit :: Char -> Bool
+checkDigit c =
+  c >= '0' && c <= '9'
+
 
 -- IMPLEMENT
 -- Adds hint data to the game state
