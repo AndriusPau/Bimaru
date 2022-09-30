@@ -1,5 +1,6 @@
-{-# OPTIONS_GHC -Wno-unused-top-binds #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# OPTIONS_GHC -Wno-unused-top-binds #-}
+
 {-# HLINT ignore "Use isDigit" #-}
 
 module Lib1
@@ -14,7 +15,6 @@ module Lib1
 where
 
 import Types
-
 
 ---------------------------------------------------------------------------------------------------
 -- State settings
@@ -32,8 +32,12 @@ gameStart :: State -> Document -> State
 gameStart (State l) (DMap ((s, d) : xs)) =
   if s == "game_setup_id"
     then State (("toggles", DString []) : ((s, d) : l))
-    else gameStart (State
-    ((s, d) : l)) (DMap xs)
+    else
+      gameStart
+        ( State
+            ((s, d) : l)
+        )
+        (DMap xs)
 gameStart _ _ = emptyState
 
 ---------------------------------------------------------------------------------------------------
@@ -47,6 +51,7 @@ gameStart _ _ = emptyState
 -- String - The result string that has the whole gameboard and other information for displayment.
 render :: State -> String
 render st = "      " ++ drawGridLineNum ++ "\n ┌────────────────────────\n │    " ++ drawGridTop st ++ "\n │\n" ++ drawGrid st [] 0
+
 --render = show
 
 -- This function draws the row data and the whole grid section of the map (without the top data).
@@ -61,7 +66,6 @@ drawGrid st rez y =
     then drawGrid st (rez ++ drawGridLine st y) (y + 1)
     else rez
 
-
 -- This function draws a single line of the grid.
 -- Meant to be used by the drawGrid function and uses drawGridSide, drawGridRow functions.
 -- State - The current gamestate.
@@ -74,10 +78,9 @@ drawGridLine st y = [intToChar y] ++ "│" ++ (drawGridSide st y : " ") ++ "  " 
 -- Meant to be used by the render function.
 -- String - The result string that is from 0 to 9 with space between them.
 drawGridLineNum :: String
-drawGridLineNum = foldl (\s x -> s ++ (x : " ")) [] ['0'..'9']
+drawGridLineNum = foldl (\s x -> s ++ (x : " ")) [] ['0' .. '9']
 
-
--- This function draws the map side of the grid. 
+-- This function draws the map side of the grid.
 -- Meant to be used by the drawGridLine function and uses drawGridRow (recursively), drawGridCell functions.
 -- State - The current gamestate.
 -- Sring - A temporary string that saves the row data.
@@ -101,16 +104,17 @@ drawGridCell :: State -> Int -> Int -> Char
 drawGridCell st x y =
   -- If toggle is enabled in this cell
   if getToggleCellValue (getToggleState st) x y
-    -- Then set the character in this cell to be T
-    then 'T'
-    -- Else,
-    else
-      -- If hint is enabled in this cell
+    then -- Then set the character in this cell to be T
+      'T'
+    else -- Else,
+
+    -- If hint is enabled in this cell
+
       if False
-        -- Then set the character in this cell to be H
-        then 'H'
-        -- Else, set the character to the standart position
-        else '0'
+        then -- Then set the character in this cell to be H
+          'H'
+        else -- Else, set the character to the standart position
+          '0'
 
 -- This function finds out if a certain cell is toggled.
 -- Meant to be used by the drawGridCell function and uses getToggleCellValue (recursively).
@@ -136,14 +140,11 @@ getToggleState (State ((st, doc) : xs)) =
     else getToggleState (State xs)
 getToggleState _ = " "
 
-
-
 {-
 --To be implemented after the implementation of the Toggle and Hint functions.
 getHintValue ::
-getHIntValue = 
+getHIntValue =
 -}
-
 
 -- This draws the side (occupied_rows) information on the board.
 -- Meant to be used by the drawGridLine function and uses drawGridSide (recursively), getSingleDIntValue functions.
@@ -225,7 +226,6 @@ readToggle (xD : yD : xsD) (xU : yU : xsU) rez rep
       else readToggle xsD (xU : yU : xsU) (rez ++ [xD] ++ [yD]) rep
   | rep == 0 = rez ++ [xU] ++ [yU]
   | otherwise = rez
-
 readToggle ['\"'] (xU : yU : xsU) rez rep =
   if rep == 0
     then rez ++ xU : [yU]
@@ -241,35 +241,32 @@ checkDigit c =
 hint :: State -> Document -> State
 hint (State l) h = State l
 
-
-
-
 intToChar :: Int -> Char
 intToChar x
-    | x == 0 = '0'
-    | x == 1 = '1'
-    | x == 2 = '2'
-    | x == 3 = '3'
-    | x == 4 = '4'
-    | x == 5 = '5'
-    | x == 6 = '6'
-    | x == 7 = '7'
-    | x == 8 = '8'
-    | x == 9 = '9'
+  | x == 0 = '0'
+  | x == 1 = '1'
+  | x == 2 = '2'
+  | x == 3 = '3'
+  | x == 4 = '4'
+  | x == 5 = '5'
+  | x == 6 = '6'
+  | x == 7 = '7'
+  | x == 8 = '8'
+  | x == 9 = '9'
 intToChar _ = ' '
 
 charToInt :: Char -> Int
 charToInt x
-    | x == '0' = 0
-    | x == '1' = 1
-    | x == '2' = 2
-    | x == '3' = 3
-    | x == '4' = 4
-    | x == '5' = 5
-    | x == '6' = 6
-    | x == '7' = 7
-    | x == '8' = 8
-    | x == '9' = 9
+  | x == '0' = 0
+  | x == '1' = 1
+  | x == '2' = 2
+  | x == '3' = 3
+  | x == '4' = 4
+  | x == '5' = 5
+  | x == '6' = 6
+  | x == '7' = 7
+  | x == '8' = 8
+  | x == '9' = 9
 charToInt _ = 0
 
 ---------------------------------------------------------------------------------------------------
