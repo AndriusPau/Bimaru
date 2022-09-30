@@ -1,8 +1,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Redundant if" #-}
 
+{-# HLINT ignore "Redundant if" #-}
 {-# HLINT ignore "Use isDigit" #-}
 
 module Lib1
@@ -34,12 +33,7 @@ gameStart :: State -> Document -> State
 gameStart (State l) (DMap ((s, d) : xs)) =
   if s == "game_setup_id"
     then State (("toggles", DString []) : ((s, d) : l))
-    else
-      gameStart
-        ( State
-            ((s, d) : l)
-        )
-        (DMap xs)
+    else gameStart (State ((s, d) : l)) (DMap xs)
 gameStart _ _ = emptyState
 
 ---------------------------------------------------------------------------------------------------
@@ -53,7 +47,8 @@ gameStart _ _ = emptyState
 -- String - The result string that has the whole gameboard and other information for displayment.
 
 render :: State -> String
-render st = "      " ++ drawGridLineNum ++ "\n ┌────────────────────────\n │    " ++ drawGridTop st ++ "\n │\n" ++ drawGrid st [] 0
+render st = "      " ++ drawGridLineNum ++ "\n ┌────────────────────────\n │    " ++ drawGridTop st ++ "\n │\n" ++ drawGrid st [] 0 ++ "\n"
+  ++ drawHints st
 --render = show
 
 -- This function draws the row data and the whole grid section of the map (without the top data).
@@ -103,20 +98,10 @@ drawGridRow st rez x y =
 -- Int - Accumulator, which counts which row we are on.
 -- Char - The result char that shows the current state of the cell.
 drawGridCell :: State -> Int -> Int -> Char
-drawGridCell st x y =
-  -- If toggle is enabled in this cell
-  if getToggleCellValue (getToggleState st) x y
-    then -- Then set the character in this cell to be T
-      'T'
-    else -- Else,
-
-    -- If hint is enabled in this cell
-
-      if False
-        then -- Then set the character in this cell to be H
-          'H'
-        else -- Else, set the character to the standart position
-          '0'
+drawGridCell st x y
+  | getToggleCellValue (getToggleState st) x y = 'T'
+  | getHintCellValue (getHintsString (show (getHintsDoc st)) [] []) x y = 'H'
+  | otherwise = '0'
 
 -- This function finds out if a certain cell is toggled.
 -- Meant to be used by the drawGridCell function and uses getToggleCellValue (recursively).
@@ -142,11 +127,12 @@ getToggleState (State ((st, doc) : xs)) =
     else getToggleState (State xs)
 getToggleState _ = " "
 
-{-
---To be implemented after the implementation of the Toggle and Hint functions.
-getHintValue ::
-getHIntValue =
--}
+getHintCellValue :: String -> Int -> Int -> Bool
+getHintCellValue (xS : yS : xs) x y
+  | xS == intToChar x && yS == intToChar y = True
+  | null xs = False
+  | otherwise = getToggleCellValue xs x y
+getHintCellValue _ _ _ = False
 
 -- This draws the side (occupied_rows) information on the board.
 -- Meant to be used by the drawGridLine function and uses drawGridSide (recursively), getSingleDIntValue functions.
@@ -206,16 +192,19 @@ getDIntValue _ _ _ = "test"
 mkCheck :: State -> Check
 mkCheck _ = Check []
 
--- IMPLEMENT
+-- IMPLEMENT   State ((s, setToggle doc (concat str)) : xs)
 -- Toggle state's value
 -- Receive raw user input tokens
 
 toggle :: State -> [String] -> State
-toggle (State ((s, doc) : xs)) str =
+toggle st = toggleState st (State [])
+
+toggleState :: State -> State -> [String] -> State
+toggleState (State ((s, doc) : xs)) (State temp) str =
   if s == "toggles"
-    then State ((s, setToggle doc (concat str)) : xs)
-    else toggle (State xs) str
-toggle _ _ = emptyState
+    then State (temp ++ ((s, setToggle doc (concat str)) : xs))
+    else toggleState (State xs) (State ((s, doc) : temp)) str
+toggleState _ _ _ = emptyState
 
 setToggle :: Document -> String -> Document
 setToggle doc str = DString (readToggle (drop 9 (show doc)) (filter checkDigit str) [] 0)
@@ -242,8 +231,100 @@ checkDigit c =
 -- Adds hint data to the game state
 hint :: State -> Document -> State
 --hint (State l) h = State l
-hint (State l) (DMap ((s, d) : xs)) = State (( " hints ", d) : l)
+hint (State l) (DMap ((s, d) : xs)) = State (( "hints", d) : l)
 hint _ _ = emptyState
+
+---------------------------------------------------------------------------------------------------
+
+drawHints :: State -> String
+drawHints st = groupHints (getHintsString (show (getHintsDoc st)) [] []) []
+
+--Finds the most current hint data and makes it to be String type
+showHintState :: State -> String
+showHintState (State ((st, doc) : xs)) =
+  if st == "hints"
+    then show doc
+    else showHintState (State xs)
+showHintState _ = "No hints found"
+
+--Finds the coords in the hint STRING, uses the groupHints function to group coords and gives us what user sees
+getHintsString :: String -> String -> String -> String
+getHintsString (x : xs) str rez
+  | x /= 'N' =
+    if length str == 9
+      then
+        if str == "DInteger "
+          then getHintsString xs [] (rez ++ [x])
+          else getHintsString xs (tail str ++ [x]) rez
+      else getHintsString xs (str ++ [x]) rez
+  | length rez == 0 = "No hints found"
+  | otherwise = rez
+getHintsString _ _ _ = "No hints found"
+
+-- From one line of numbers (coordinates) makes it look like "(6;8)"
+groupHints :: String -> String -> String
+groupHints (x : y : xs) rez
+  | x : [y] == "No" = x : y : xs
+  | otherwise = groupHints xs (rez ++ " (" ++ [x] ++ ";" ++ [y] ++ ") ")
+groupHints _ rez = rez
+
+--Right now it is not used!!!!!!!!!!!!!!!!!
+getHintsDoc :: State -> Document
+getHintsDoc (State ((x, s) : xs)) =
+  if x == "hints"
+    then s
+    else getHintsDoc (State xs)
+getHintsDoc _ = DNull
+
+hintExists :: State -> Bool
+hintExists (State ((str, doc) : xs)) = str == "hints"
+hintExists _ = False
+
+--Dont forget to delete this if Andrius likes hints as they are right now
+
+{-
+getHintList :: Document -> Document -> [Document]
+
+getHintList (DMap ((s, d) : xs)) DList(a : as) =
+  if s == "col" || s == "row"
+    then getHintList(DMap d) DList(as ++ d)
+  else getHintList (DMap d) DList(as ++ d)
+getHintList _ _= []
+
+-}
+
+{-
+getHintDoc :: String -> Document -> Document -> Document
+
+getHintDoc str (DMap ((s, d) : xs)) (DString a) =
+  a
+
+getHintDoc _ _ _ = DString("No hints found")
+-}
+
+{-
+---------------------------------------------------------------------------------------------------
+-- Unchanged (starter) functions
+
+-- IMPLEMENT
+-- Make check from current state
+mkCheck :: State -> Check
+mkCheck _ = Check []
+
+-- IMPLEMENT
+-- Toggle state's value
+-- Receive raw user input tokens
+toggle :: State -> [String] -> State
+toggle (State l) t = State $ ("Toggle " ++ show t) : l
+
+-- IMPLEMENT
+-- Adds hint data to the game state
+hint :: State -> Document -> State
+hint (State l) h = State $ ("Hint " ++ show h) : l
+---------------------------------------------------------------------------------------------------
+-}
+
+-- Useful helper functions.
 
 intToChar :: Int -> Char
 intToChar x
@@ -272,92 +353,3 @@ charToInt x
   | x == '8' = 8
   | x == '9' = 9
 charToInt _ = 0
-
----------------------------------------------------------------------------------------------------
-
---Finds the most current hint data and makes it to be String type
-showHintString :: State -> String
-showHintString (State ((st, doc) : xs)) =
-  if st == " hints "
-    then show doc
-    else showHintString(State xs)
-showHintString _ = "No hints found"
-
---Finds the coords in the hint STRING, uses the groupHints function to group coords and gives us what user sees
-getHints :: String -> String -> String -> String
-
-getHints (x : xs) str rez
-  | x /= 'N' =
-    if length str == 9
-      then
-        if str == "DInteger "
-          then getHints xs [] (rez ++ [x])
-          else getHints xs (tail str ++ [x]) rez
-      else getHints xs (str ++ [x]) rez
-  | length rez == 0 = "No hints found"
-  | otherwise = groupHints rez []
-getHints _ _ _ = "No hints found"
-
--- From one line of numbers (coordinates) makes it look like "(6;8)"
-groupHints :: String -> String -> String
-groupHints (x : y : xs) rez = groupHints xs (rez ++ " (" ++ [x] ++ ";" ++ [y] ++ ") " )
-groupHints _ rez  = rez
-
-
---Right now it is not used!!!!!!!!!!!!!!!!!
-getHintsDoc :: State ->  Document
-
-getHintsDoc (State((x, s) : xs)) =
-  if x == " hints "
-    then s
-    else getHintsDoc (State xs)
-getHintsDoc _ = DNull
-
-
---Dont forget to delete this if Andrius likes hints as they are right now
-
-{-
-getHintList :: Document -> Document -> [Document]
-
-getHintList (DMap ((s, d) : xs)) DList(a : as) =
-  if s == "col" || s == "row"
-    then getHintList(DMap d) DList(as ++ d)
-  else getHintList (DMap d) DList(as ++ d)
-getHintList _ _= []
-
-
--}
-
-
-{-
-getHintDoc :: String -> Document -> Document -> Document
-
-
-getHintDoc str (DMap ((s, d) : xs)) (DString a) = 
-  a
-
-getHintDoc _ _ _ = DString("No hints found")
--}
-
-
-{-
----------------------------------------------------------------------------------------------------
--- Unchanged (starter) functions
-
--- IMPLEMENT
--- Make check from current state
-mkCheck :: State -> Check
-mkCheck _ = Check []
-
--- IMPLEMENT
--- Toggle state's value
--- Receive raw user input tokens
-toggle :: State -> [String] -> State
-toggle (State l) t = State $ ("Toggle " ++ show t) : l
-
--- IMPLEMENT
--- Adds hint data to the game state
-hint :: State -> Document -> State
-hint (State l) h = State $ ("Hint " ++ show h) : l
----------------------------------------------------------------------------------------------------
--}
