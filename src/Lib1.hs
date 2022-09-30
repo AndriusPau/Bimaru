@@ -1,4 +1,6 @@
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Redundant if" #-}
 
 module Lib1
   ( State,
@@ -41,8 +43,9 @@ gameStart _ _ = emptyState
 -- Render gets the current gamestate and turns it to a string to be printed to the screen.
 -- State - The current gamestate.
 -- String - The result string that has the whole gameboard and other information for displayment.
+
 render :: State -> String
-render st = "    " ++ drawGridTop st ++ "\n\n" ++ drawGrid st [] 0
+render st = "    " ++ drawGridTop st ++ "\n\n" ++ drawGrid st [] 0 ++ "\nhints: " ++ getHints (showHintString st) [] []
 
 -- This function draws the row data and the whole grid section of the map (without the top data).
 -- Meant to be used by the render function and uses drawGrid (recursively), drawGridLine functions.
@@ -181,9 +184,76 @@ toggle (State l) t = State l
 -- IMPLEMENT
 -- Adds hint data to the game state
 hint :: State -> Document -> State
-hint (State l) h = State l
+--hint (State l) h = State l
+hint (State l) (DMap ((s, d) : xs)) = State (( " hints ", d) : l)
+hint _ _ = emptyState
 
 ---------------------------------------------------------------------------------------------------
+
+--Finds the most current hint data and makes it to be String type
+showHintString :: State -> String
+showHintString (State ((st, doc) : xs)) =
+  if st == " hints "
+    then show doc
+    else showHintString(State xs)
+showHintString _ = "No hints found"
+
+--Finds the coords in the hint STRING, uses the groupHints function to group coords and gives us what user sees
+getHints :: String -> String -> String -> String
+
+getHints (x : xs) str rez
+  | x /= 'N' =
+    if length str == 9
+      then
+        if str == "DInteger "
+          then getHints xs [] (rez ++ [x])
+          else getHints xs (tail str ++ [x]) rez
+      else getHints xs (str ++ [x]) rez
+  | length rez == 0 = "No hints found"
+  | otherwise = groupHints rez []
+getHints _ _ _ = "No hints found"
+
+-- From one line of numbers (coordinates) makes it look like "(6;8)"
+groupHints :: String -> String -> String
+groupHints (x : y : xs) rez = groupHints xs (rez ++ " (" ++ [x] ++ ";" ++ [y] ++ ") " )
+groupHints _ rez  = rez
+
+
+--Right now it is not used!!!!!!!!!!!!!!!!!
+getHintsDoc :: State ->  Document
+
+getHintsDoc (State((x, s) : xs)) =
+  if x == " hints "
+    then s
+    else getHintsDoc (State xs)
+getHintsDoc _ = DNull
+
+
+--Dont forget to delete this if Andrius likes hints as they are right now
+
+{-
+getHintList :: Document -> Document -> [Document]
+
+getHintList (DMap ((s, d) : xs)) DList(a : as) =
+  if s == "col" || s == "row"
+    then getHintList(DMap d) DList(as ++ d)
+  else getHintList (DMap d) DList(as ++ d)
+getHintList _ _= []
+
+
+-}
+
+
+{-
+getHintDoc :: String -> Document -> Document -> Document
+
+
+getHintDoc str (DMap ((s, d) : xs)) (DString a) = 
+  a
+
+getHintDoc _ _ _ = DString("No hints found")
+-}
+
 
 {-
 ---------------------------------------------------------------------------------------------------
