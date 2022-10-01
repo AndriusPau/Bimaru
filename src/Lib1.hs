@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 {-# HLINT ignore "Redundant if" #-}
 {-# HLINT ignore "Use isDigit" #-}
@@ -16,7 +17,6 @@ module Lib1
 where
 
 import Types
-
 ---------------------------------------------------------------------------------------------------
 -- State settings
 data State = State [(String, Document)]
@@ -196,7 +196,31 @@ getDIntValue _ _ _ = "test"
 -- IMPLEMENT
 -- Make check from current state
 mkCheck :: State -> Check
-mkCheck _ = Check []
+mkCheck (State ((str, doc) : xs)) =
+  if str == "toggles"
+    then convertStringToCheck (show doc)
+    else mkCheck (State xs)
+
+convertStringToCheck :: String -> Check
+convertStringToCheck doc = Check (convertStringToCheck' (getToggledValues doc []))
+
+convertStringToCheck' :: String -> [Coord]
+convertStringToCheck' (x : y : xs) = Coord (convertDigitToInt x) (convertDigitToInt y) : convertStringToCheck' xs
+convertStringToCheck' _ = []
+
+getToggledValues :: String -> String -> String
+getToggledValues (x : y : xs) rez =
+  if checkDigit x
+    then 
+        if x /= '"' && y /= '"'
+            then getToggledValues xs (rez ++ [x, y])
+            else rez
+    else getToggledValues (y : xs) rez        
+getToggledValues _ rez = rez    
+
+convertDigitToInt :: Char -> Int
+convertDigitToInt c = fromEnum c - fromEnum '0'       
+---------------------------------------------------------------------------------------------------
 
 -- IMPLEMENT   State ((s, setToggle doc (concat str)) : xs)
 -- Toggle state's value
