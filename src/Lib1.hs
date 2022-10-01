@@ -194,20 +194,32 @@ getDIntValue _ _ _ = "test"
 -- Functions that currently do nothing
 ---------------------------------------------------------------------------------------------------
 -- IMPLEMENT
--- Make check from current state
+-- Returns the current toggled cells which is sent to the server and checked if it is correct.
+-- State - Current game state.
+-- Check - Data type that contains a list of toggled cells.
 mkCheck :: State -> Check
 mkCheck (State ((str, doc) : xs)) =
   if str == "toggles"
     then convertStringToCheck (show doc)
     else mkCheck (State xs)
 
+-- This function converts the document string into a Check data type.
+-- String - The document string, that needs to be parsed.
+-- Check - The result data type that contains a list of toggled cells.
 convertStringToCheck :: String -> Check
 convertStringToCheck doc = Check (convertStringToCheck' (getToggledValues doc []))
 
+-- This function converts the string of toggled cells to a list of coordinates.
+-- String - The document string, that needs to be parsed.
+-- [Coord] - A list of a data type that contains toggled coordinates in (col,row) format.
 convertStringToCheck' :: String -> [Coord]
 convertStringToCheck' (x : y : xs) = Coord (convertDigitToInt x) (convertDigitToInt y) : convertStringToCheck' xs
 convertStringToCheck' _ = []
 
+-- This function gets a string of toggled cells from the gamestate.
+-- String - The document string, that needs to be parsed.
+-- String - A temporary recursive string that keeps track of the result.
+-- String - The result string that contains all the toggled cells without whitespaces.
 getToggledValues :: String -> String -> String
 getToggledValues (x : y : xs) rez =
   if checkDigit x
@@ -218,6 +230,8 @@ getToggledValues (x : y : xs) rez =
     else getToggledValues (y : xs) rez        
 getToggledValues _ rez = rez    
 
+-- Converts a digit in char format to an int
+-- Char - The digit in char format.
 convertDigitToInt :: Char -> Int
 convertDigitToInt c = fromEnum c - fromEnum '0'       
 ---------------------------------------------------------------------------------------------------
