@@ -206,6 +206,7 @@ convertStringToCheck doc = Check (convertStringToCheck' (getToggledValues doc []
 
 convertStringToCheck' :: String -> [Coord]
 convertStringToCheck' (x : y : xs) = Coord (convertDigitToInt x) (convertDigitToInt y) : convertStringToCheck' xs
+convertStringToCheck' _ = []
 
 getToggledValues :: String -> String -> String
 getToggledValues (x : y : xs) rez =
@@ -218,7 +219,7 @@ getToggledValues (x : y : xs) rez =
 getToggledValues _ rez = rez    
 
 convertDigitToInt :: Char -> Int
-convertDigitToInt c = fromEnum c - fromEnum '0'    
+convertDigitToInt c = fromEnum c - fromEnum '0'       
 ---------------------------------------------------------------------------------------------------
 
 -- IMPLEMENT   State ((s, setToggle doc (concat str)) : xs)
