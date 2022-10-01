@@ -17,8 +17,6 @@ module Lib1
 where
 
 import Types
-import Data.Char
-
 ---------------------------------------------------------------------------------------------------
 -- State settings
 data State = State [(String, Document)]
@@ -198,24 +196,23 @@ mkCheck (State ((str, doc) : xs)) =
     else mkCheck (State xs)
 
 convertStringToCheck :: String -> Check
-convertStringToCheck str = z
-  where
-    z = Check (convertStringToCheck' (getToggledValues str [] []))
+convertStringToCheck doc = Check (convertStringToCheck' (getToggledValues doc []))
 
 convertStringToCheck' :: String -> [Coord]
-convertStringToCheck' (x : y : xs) = Coord (digitToInt x) (digitToInt y) : convertStringToCheck' xs
+convertStringToCheck' (x : y : xs) = Coord (convertDigitToInt x) (convertDigitToInt y) : convertStringToCheck' xs
 
-getToggledValues :: String -> String -> String -> String
-getToggledValues (x : xs) str rez =
-  if x /= ')'
-    then
-      if length str == 9
-        then
-          if str == "DInteger "
-            then getToggledValues xs [] (rez ++ [x])
-            else getToggledValues xs (tail str ++ [x]) rez
-        else getToggledValues xs (str ++ [x]) rez
-    else rez
+getToggledValues :: String -> String -> String
+getToggledValues (x : y : xs) rez =
+  if checkDigit x
+    then 
+        if x /= '"' && y /= '"'
+            then getToggledValues xs (rez ++ [x, y])
+            else rez
+    else getToggledValues (y : xs) rez        
+getToggledValues _ rez = rez    
+
+convertDigitToInt :: Char -> Int
+convertDigitToInt c = fromEnum c - fromEnum '0'    
 ---------------------------------------------------------------------------------------------------
 
 -- IMPLEMENT   State ((s, setToggle doc (concat str)) : xs)
