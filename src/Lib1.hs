@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 module Lib1
   ( State,
@@ -12,6 +13,7 @@ module Lib1
 where
 
 import Types
+import Data.Char
 
 ---------------------------------------------------------------------------------------------------
 -- State settings
@@ -170,7 +172,31 @@ getDIntValue _ _ _ = "test"
 -- IMPLEMENT
 -- Make check from current state
 mkCheck :: State -> Check
-mkCheck _ = Check []
+mkCheck (State ((str, doc) : xs)) =
+  if str == "toggles"
+    then convertStringToCheck (show doc)
+    else mkCheck (State xs)
+
+convertStringToCheck :: String -> Check
+convertStringToCheck str = z
+  where
+    z = Check (convertStringToCheck' (getToggledValues str [] []))
+
+convertStringToCheck' :: String -> [Coord]
+convertStringToCheck' (x : y : xs) = Coord (digitToInt x) (digitToInt y) : convertStringToCheck' xs
+
+getToggledValues :: String -> String -> String -> String
+getToggledValues (x : xs) str rez =
+  if x /= ')'
+    then
+      if length str == 9
+        then
+          if str == "DInteger "
+            then getToggledValues xs [] (rez ++ [x])
+            else getToggledValues xs (tail str ++ [x]) rez
+        else getToggledValues xs (str ++ [x]) rez
+    else rez
+---------------------------------------------------------------------------------------------------
 
 -- IMPLEMENT
 -- Toggle state's value
