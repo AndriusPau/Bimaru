@@ -96,7 +96,7 @@ drawGridCell :: State -> Int -> Int -> Char
 drawGridCell st x y
   | getToggleCellValue (getToggleState st) x y = 'T'
   | getHintCellValue (getHintState st) x y = 'H'
-  | otherwise = '0'
+  | otherwise = '.'
 
 -- This function finds out if a certain cell is toggled.
 -- Meant to be used by the drawGridCell function and uses getToggleCellValue (recursively).
