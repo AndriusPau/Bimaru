@@ -61,3 +61,25 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - bimaru-client
+  bimaru-client-2:
+    main:                Main.hs
+    source-dirs:         app2
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - bimaru-client
+
+tests:
+  bimaru-client-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - bimaru-client
+    - tasty
+    - tasty-hunit

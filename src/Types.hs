@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 module Types (
-    Document(..), Check(..), Coord(..)
+    Document(..), Check(..), Coord(..), ToDocument, toDocument
 ) where
 import Data.Yaml as Y
 import Data.HashMap.Strict as HMS
@@ -44,3 +44,6 @@ instance FromJSON Document where
             Nothing -> error $ show s ++ " not an integer"
             Just i -> pure $ DInteger i
     parseJSON a = error $ show a ++ " not supported"
+
+class ToDocument a where
+    toDocument :: a -> Document
