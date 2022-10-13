@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
 {-# HLINT ignore "Use newtype instead of data" #-}
 {-# HLINT ignore "Use isDigit" #-}
 
@@ -14,6 +15,7 @@ module Lib1
 where
 
 import Types
+
 ---------------------------------------------------------------------------------------------------
 -- State settings
 data State = State [(String, Document)]
@@ -28,9 +30,11 @@ emptyState = State []
 -- This adds game data to initial state
 gameStart :: State -> Document -> State
 gameStart (State l) (DMap ((s, d) : xs)) =
-  if s == "game_setup_id"
-    then State (("toggles", DString []) : ("hints", DString []) : ((s, d) : l))
-    else gameStart (State ((s, d) : l)) (DMap xs)
+  case s of
+    "game_setup_id" -> State (("toggles", DString []) : ("hints", DString []) : ((s, d) : l))
+    "occupied_rows" -> gameStart (State ((s, DString (getDIntValue (show d) [] [])) : l)) (DMap xs)
+    "occupied_cols" -> gameStart (State ((s, DString (getDIntValue (show d) [] [])) : l)) (DMap xs)
+    _ -> gameStart (State ((s, d) : l)) (DMap xs)
 gameStart _ _ = emptyState
 
 ---------------------------------------------------------------------------------------------------
@@ -44,6 +48,7 @@ gameStart _ _ = emptyState
 -- String - The result string that has the whole gameboard and other information for displayment.
 render :: State -> String
 render st = "      " ++ drawGridLineNum ++ "\n ┌────────────────────────\n │    " ++ drawGridTop st ++ "\n │\n" ++ drawGrid st [] 0
+
 --render = show
 
 -- This function draws the row data and the whole grid section of the map (without the top data).
@@ -154,17 +159,9 @@ getHintState _ = " "
 drawGridSide :: State -> Int -> Char
 drawGridSide (State ((st, doc) : xs)) r =
   if st == "occupied_rows"
-    then getSingleDIntValue (show doc) r
+    then show doc !! (r + 9)
     else drawGridSide (State xs) r
 drawGridSide _ _ = ' '
-
--- This gets a single char from the gamestate to put on the side (occupied_rows) information part of the board.
--- Meant to be used by the drawGridSide function and uses the getDIntValue function.
--- String - the document string, that needs to be parsed.
--- Int - Accumulator, which counts which line we are on.
--- Char - the result char that will be at the side of the grid, which represents occupied_rows
-getSingleDIntValue :: String -> Int -> Char
-getSingleDIntValue doc r = getDIntValue doc [] [] !! r
 
 -- This draws the top (occupied_cols) information on the board.
 -- Meant to be used by the render function and uses drawGridTop (recursively), getDIntValue functions.
@@ -173,7 +170,7 @@ getSingleDIntValue doc r = getDIntValue doc [] [] !! r
 drawGridTop :: State -> String
 drawGridTop (State ((st, doc) : xs)) =
   if st == "occupied_cols"
-    then foldl (\s x -> s ++ (x : " ")) [] (getDIntValue (show doc) [] [])
+    then foldl (\s x -> s ++ (x : " ")) [] (init (drop 9 (show doc)))
     else drawGridTop (State xs)
 drawGridTop _ = []
 
@@ -235,9 +232,9 @@ getToggledValues :: String -> String -> String
 getToggledValues (x : y : xs) rez =
   if checkDigit x
     then
-        if x /= '"' && y /= '"'
-            then getToggledValues xs (rez ++ [x, y])
-            else rez
+      if x /= '"' && y /= '"'
+        then getToggledValues xs (rez ++ [x, y])
+        else rez
     else getToggledValues (y : xs) rez
 getToggledValues _ rez = rez
 
@@ -272,7 +269,7 @@ toggleState _ _ _ = emptyState
 -- String - The user input after using he toggle function.
 -- Document - The result toggle state after the changes.
 setToggle :: Document -> String -> Document
-setToggle doc str = DString (readToggle (drop 9 (show doc)) (filter checkDigit str) [] 0)
+setToggle doc str = DString (readToggle (init (drop 9 (show doc))) (filter checkDigit str) [] 0)
 
 -- This function reads the document string and changes it to fit the toggle condition.
 -- Meant to be used by the setToggle function and uses the readToggle (recursively) function.
@@ -283,17 +280,23 @@ setToggle doc str = DString (readToggle (drop 9 (show doc)) (filter checkDigit s
 -- String - The result string that contains the updated gamestate toggle information.
 readToggle :: String -> String -> String -> Int -> String
 readToggle (xD : yD : xsD) (xU : yU : xsU) rez rep
-  | xD /= '"' =
-    if (xD == xU) && (yD == yU)
-      then readToggle xsD (xU : yU : xsU) rez (rep + 1)
-      else readToggle xsD (xU : yU : xsU) (rez ++ [xD] ++ [yD]) rep
-  | rep == 0 = rez ++ [xU] ++ [yU]
+  | xD == xU && yD == yU = readToggle xsD (xU : yU : xsU) rez (rep + 1)
+  | xD /= xU || yD /= yU = readToggle xsD (xU : yU : xsU) (rez ++ [xD] ++ [yD]) rep
+  | (rep == 0) && not (null xsU) = readToggle (rez ++ [xU] ++ [yU]) xsU [] 0
+  | (rep == 0) && null xsU = rez ++ [xU] ++ [yU]
+  | (rep == 1) && not (null xsU) = readToggle rez xsU [] 0
+  | (rep == 1) && null xsU = rez
   | otherwise = rez
-readToggle ['\"'] (xU : yU : xsU) rez rep =
-  if rep == 0
-    then rez ++ xU : [yU]
-    else rez
-readToggle _ _ _ _ = ""
+readToggle [] (xU : yU : xsU) rez rep
+  | rep == 0 =
+    if null xsU
+      then rez ++ [xU] ++ [yU]
+      else readToggle (rez ++ [xU] ++ [yU]) xsU [] 0
+  | null xsU = rez
+  | otherwise = readToggle rez xsU [] 0
+readToggle xsD [_] _ _ = xsD
+readToggle xsD [] _ _ = xsD
+readToggle rez _ _ _ = rez ++ "test"
 
 ---------------------------------------------------------------------------------------------------
 -- Hint implementation
@@ -305,7 +308,7 @@ readToggle _ _ _ _ = ""
 -- Document - The hint information gained from the server.
 -- State - The result gamestate after the use of a hint.
 hint :: State -> Document -> State
-hint (State l) (DMap ((s, d) : xs)) = hintState (State l) (State []) d
+hint (State l) (DMap ((_, d) : _)) = hintState (State l) (State []) d
 hint _ _ = emptyState
 
 -- This function located the hint data in the current gamestate.
@@ -317,16 +320,16 @@ hint _ _ = emptyState
 hintState :: State -> State -> Document -> State
 hintState (State ((st, doc) : xs)) (State temp) d =
   if st == "hints"
-    then State( temp ++ (( "hints", setHint d) : xs))
-    else hintState (State xs) (State(temp ++ [(st, doc)])) d
-hintState _ _ _= emptyState
+    then State (temp ++ (("hints", setHint d) : xs))
+    else hintState (State xs) (State (temp ++ [(st, doc)])) d
+hintState _ _ _ = emptyState
 
 -- This function changes the document in a way to suit the state.
 -- Meant to be used by the hintState function and uses the getHintString function.
 -- Document - The document that is applied to the gamestate, before parsing.
 -- Document - The result document that contains the changed hint information.
 setHint :: Document -> Document
-setHint doc = DString (getHintsString(show doc) [] [])
+setHint doc = DString (getHintsString (show doc) [] [])
 
 -- This function finds the coordinate information from the doument string.
 -- Meant to be used by the setHint function and uses the getHintString (recursively) function.
