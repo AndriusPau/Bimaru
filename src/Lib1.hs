@@ -4,7 +4,7 @@
 {-# HLINT ignore "Use isDigit" #-}
 
 module Lib1
-  ( State,
+  ( State(..),
     emptyState,
     gameStart,
     render,
@@ -47,9 +47,9 @@ gameStart _ _ = emptyState
 -- State - The current gamestate.
 -- String - The result string that has the whole gameboard and other information for displayment.
 render :: State -> String
-render st = "      " ++ drawGridLineNum ++ "\n ┌────────────────────────\n │    " ++ drawGridTop st ++ "\n │\n" ++ drawGrid st [] 0
+--render st = "      " ++ drawGridLineNum ++ "\n ┌────────────────────────\n │    " ++ drawGridTop st ++ "\n │\n" ++ drawGrid st [] 0
 
---render = show
+render = show
 
 -- This function draws the row data and the whole grid section of the map (without the top data).
 -- Meant to be used by the render function and uses drawGrid (recursively), drawGridLine functions.
