@@ -47,3 +47,6 @@ instance FromJSON Document where
 
 class ToDocument a where
     toDocument :: a -> Document
+
+instance ToDocument Check where
+    toDocument t = DString (show t)
