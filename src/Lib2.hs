@@ -8,6 +8,95 @@ import Lib1 (State(..))
 -- IMPLEMENT
 -- First, make Check an instance of ToDocument class
 
+-- !
+-- How to enter GHCI:
+-- Open the terminal.
+-- Enter the directory where your files are located (src folder most likely) on your terminal.
+-- Write "stack exec --package async --package say -- ghci".
+-- You should see that you're in the prelude section of the GHCI.
+-- If so, write ":load FILE_NAME" (FILE_NAME is most likely "lib2").
+-- This should have loaded all the necessary files.
+-- Use this environment to test out your functions.
+-- Example:
+-- "renderDocument (DString "test")"
+-- This line will call the renderDocument function with the input (DString "test") and give you an output.
+-- GL
+
+-- Correct Toggle coordinates:
+-- 0205233345273747626365666768808188949596
+-- 02 05 23 33 45 27 37 47 62 63 65 66 67 68 80 81 88 94 95 96
+
+-- Working yaml formats, that the server can accept:
+-- "{coords: [{col: 0, row: 2}, {col: 0, row: 5}, {col: 2, row: 3}, {col: 3, row: 3}, {col: 4, row: 5}, {col: 2, row: 7}, {col: 3, row: 7}, {col: 4, row: 7}, {col: 6, row: 2}, {col: 6, row: 3}, {col: 6, row: 5}, {col: 6, row: 6}, {col: 6, row: 7}, {col: 6, row: 8}, {col: 8, row: 0}, {col: 8, row: 1}, {col: 8, row: 8}, {col: 9, row: 4}, {col: 9, row: 5}, {col: 9, row: 6}]}"
+{-
+  "---\n" ++ 
+  "coords:\n" ++ 
+  
+  "- col: 0\n" ++ 
+  "  row: 2\n" ++ 
+
+  "- col: 0\n" ++ 
+  "  row: 5\n" ++
+
+  "- col: 2\n" ++ 
+  "  row: 3\n" ++
+
+  "- col: 3\n" ++ 
+  "  row: 3\n" ++
+
+  "- col: 4\n" ++ 
+  "  row: 5\n" ++
+
+  "- col: 2\n" ++ 
+  "  row: 7\n" ++
+
+  "- col: 3\n" ++ 
+  "  row: 7\n" ++
+
+  "- col: 4\n" ++ 
+  "  row: 7\n" ++
+
+  "- col: 6\n" ++ 
+  "  row: 2\n" ++
+
+  "- col: 6\n" ++ 
+  "  row: 3\n" ++
+
+  "- col: 6\n" ++ 
+  "  row: 5\n" ++
+
+  "- col: 6\n" ++ 
+  "  row: 6\n" ++
+
+  "- col: 6\n" ++ 
+  "  row: 7\n" ++
+  
+  "- col: 6\n" ++ 
+  "  row: 8\n" ++
+
+  "- col: 8\n" ++ 
+  "  row: 0\n" ++
+
+  "- col: 8\n" ++ 
+  "  row: 1\n" ++
+
+  "- col: 8\n" ++ 
+  "  row: 8\n" ++
+
+  "- col: 9\n" ++ 
+  "  row: 4\n" ++
+
+  "- col: 9\n" ++ 
+  "  row: 5\n" ++
+
+  "- col: 9\n" ++ 
+  "  row: 6\n"
+-}
+
+
+
+
+
 -- IMPLEMENT
 -- Renders document to yaml
 renderDocument :: Document -> String
@@ -16,15 +105,6 @@ renderDocument (DString d) = error d
 
 
 
-
--- gameStart :: State -> Document -> State
--- gameStart (State l) (DMap ((s, d) : xs)) =
---   case s of
---     "game_setup_id" -> State (("toggles", DString []) : ("hints", DString []) : ((s, d) : l))
---     "occupied_rows" -> gameStart (State ((s, DString (getDIntValue (show d) [] [])) : l)) (DMap xs)
---     "occupied_cols" -> gameStart (State ((s, DString (getDIntValue (show d) [] [])) : l)) (DMap xs)
---     _ -> gameStart (State ((s, d) : l)) (DMap xs)
--- gameStart _ _ = emptyState
 
 -- This is very initial state of your program
 emptyState :: State
@@ -43,7 +123,9 @@ hint s d = Right s
 -- This adds game data to initial state
 -- Errors are reported via Either but not error 
 gameStart :: State -> Document -> Either String State
-gameStart (State l) doc = Right $ gameStartRecursive (State l) doc
+gameStart (State l) doc 
+  | doc /= DNull = Right $ gameStartRecursive (State l) doc
+  | otherwise = Left "test"
 
 gameStartRecursive :: State -> Document -> State
 gameStartRecursive (State l) (DMap ((s, d) : xs)) =

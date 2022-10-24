@@ -48,5 +48,9 @@ instance FromJSON Document where
 class ToDocument a where
     toDocument :: a -> Document
 
+-- Current plans on the Check structure after running it through ToDocument
+-- "DMap[(String  , DList[DMap[(String, DInteger)], DMap[(String, DInteger)], (...) ]  )]"
+-- "    [("coords",      [    [("col" , 0       )],     [("row",  2       )], (...) ]  )]"
+
 instance ToDocument Check where
     toDocument t = DString (show t)
