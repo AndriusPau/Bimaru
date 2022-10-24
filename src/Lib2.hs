@@ -35,8 +35,34 @@ emptyState = State []
 -- Adds hint data to the game state
 -- Errors are reported via Either but not error 
 hint :: State -> Document -> Either String State
---hint (State l) h = Right $ State $ ("Hint " ++ show h) : l
-hint s d = Right s
+hint (State l) h = Right $ hints (State l) h
+
+hints :: State -> Document -> State
+hints (State l) (DMap ((_, d) : _)) = hintState (State l) (State []) d
+hints _ _ = emptyState
+
+hintState :: State -> State -> Document -> State
+hintState (State ((st, doc) : xs)) (State temp) d =
+  if st == "hints"
+    then State (temp ++ (("hints", setHint d) : xs))
+    else hintState (State xs) (State (temp ++ [(st, doc)])) d
+hintState _ _ _ = emptyState
+
+setHint :: Document -> Document
+setHint doc = DString (getHintsString (show doc) [] [])
+
+getHintsString :: String -> String -> String -> String
+getHintsString (x : xs) str rez
+  | x /= 'N' =
+    if length str == 9
+      then
+        if str == "DInteger "
+          then getHintsString xs [] (rez ++ [x])
+          else getHintsString xs (tail str ++ [x]) rez
+      else getHintsString xs (str ++ [x]) rez
+  | null rez = ""
+  | otherwise = rez
+getHintsString _ _ _ = ""
 
 
 -- IMPLEMENT
