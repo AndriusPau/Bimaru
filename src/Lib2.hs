@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wno-unused-top-binds #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Lib2(renderDocument, hint, gameStart) where
 
 import Types ( ToDocument(..), Document(..), Check )
@@ -83,4 +81,94 @@ getDIntValue _ _ _ = "test"
 -- Errors are reported via Either but not error 
 hint :: State -> Document -> Either String State
 hint (State l) doc = Right $ ("Hint " ++ show doc) : l
+-}
+
+--  Danielius working area!!
+{-
+addFirstLine :: String -> String
+addFirstLine x = "---\n" ++ x
+
+checkIfDNull :: String -> Bool  --sugalvoti kaip rasti DNull pabaiga. Neaišku kaip veikia
+checkIfDNull (x:xs) =
+    if length (x: xs) >= 5
+        then (take 5 (x: xs)) == "DNull"
+    else False
+
+checkIfDInteger :: String -> Bool
+
+checkIfDInteger str =
+  if length str >= 9
+    then take 9 str == "DInteger "
+  else False
+
+checkIfDString :: String -> Bool
+
+checkIfDString str =
+  if length str >= 8
+    then take 8 str == "DString "
+  else False
+
+
+-- parsers goes down from here
+
+parseDNull :: Document -> String
+
+parseDNull doc =
+  if checkIfDNull (show doc)
+    then "null"
+    else "!error: Not a type of DNull!" -- reikia su Either padaryt
+
+parseDInteger :: Document -> String
+
+parseDInteger doc = 
+  if checkIfDInteger (show doc)
+    then drop 9 (show doc)
+  else "!error: Not a type of DInteger!"
+
+parseDString :: String -> String-> String
+
+parseDString str rez=
+  if checkIfDString (str)
+    then parDString (drop 9 (str)) rez
+  else "!error: Not a type of DString!"
+
+parDString :: String -> String -> String
+
+parDString (x : xs) rez =
+  if x == '"'
+    then rez
+  else parDString xs (rez ++ [x])
+
+parDString [] str = str
+
+deleteString :: String -> String -- deletes the left side of the (") found in string (included ("))
+
+deleteString (x : xs) =
+  if x == '"'
+    then xs
+  else deleteString xs
+
+deleteString [] = ""
+
+-}
+
+parseDoc :: Document -> String -> String
+
+parseDoc (DNull) acc = acc ++ "null"
+
+parseDoc (DInteger d) acc = acc ++ (show d)
+
+parseDoc (DString d) acc = acc ++ d
+
+parseDoc (DList (x : xs)) acc =
+  parseDoc (DList xs) (parseDoc x acc ++ " " )
+
+parseDoc (DList []) acc = 
+  init acc ++ "]"
+
+{-
+parseDocList :: Document -> String -> String
+
+parseDocList (DList (x: xs)) acc =
+  parseDocList
 -}
