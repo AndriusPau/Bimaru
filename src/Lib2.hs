@@ -154,9 +154,9 @@ deleteString [] = ""
 
 parseDoc :: Document -> String -> String
 
-parseDoc (DNull) acc = acc ++ "null"
+parseDoc DNull acc = acc ++ "null"
 
-parseDoc (DInteger d) acc = acc ++ (show d)
+parseDoc (DInteger d) acc = acc ++ show d
 
 parseDoc (DString d) acc = acc ++ d
 
@@ -164,7 +164,12 @@ parseDoc (DList (x : xs)) acc =
   parseDoc (DList xs) (parseDoc x acc ++ " " )
 
 parseDoc (DList []) acc = 
-  init acc ++ "]"
+  acc ++ "]"
+
+parseDoc (DMap((str, val) : xs)) acc = 
+  parseDoc (DMap xs) (parseDoc val (acc ++ " " ++ str ++ ": "))
+
+parseDoc (DMap[]) acc = acc
 
 {-
 parseDocList :: Document -> String -> String
