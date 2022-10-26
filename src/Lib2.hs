@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wno-unused-top-binds #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Lib2(renderDocument, hint, gameStart) where
 
 import Types ( ToDocument(..), Document(..), Check(..), Coord(..))
@@ -111,7 +109,7 @@ toDocumentRecursive _ doc = doc
 -- IMPLEMENT
 -- Renders document to yaml
 renderDocument :: Document -> String
-renderDocument (DString d) = error d
+renderDocument doc = parseDoc (DMap[("coords", DList[DMap[("col", DInteger 0),("row", DInteger 2)], DMap[("col", DInteger 0), ("row", DInteger 5)], DMap[("col", DInteger 2), ("row", DInteger 3)], DMap[("col", DInteger 3), ("row", DInteger 3)], DMap[("col", DInteger 4), ("row", DInteger 5)], DMap[("col", DInteger 2), ("row", DInteger 7)], DMap[("col", DInteger 3), ("row", DInteger 7)], DMap[("col", DInteger 4), ("row", DInteger 7)], DMap[("col", DInteger 6), ("row", DInteger 2)], DMap[("col", DInteger 6), ("row", DInteger 3)], DMap[("col", DInteger 6), ("row", DInteger 5)], DMap[("col", DInteger 6), ("row", DInteger 6)], DMap[("col", DInteger 6), ("row", DInteger 7)], DMap[("col", DInteger 6), ("row", DInteger 8)], DMap[("col", DInteger 8), ("row", DInteger 0)], DMap[("col", DInteger 8), ("row", DInteger 1)], DMap[("col", DInteger 8), ("row", DInteger 8)], DMap[("col", DInteger 9), ("row", DInteger 4)], DMap[("col", DInteger 9), ("row", DInteger 5)], DMap[("col", DInteger 9), ("row", DInteger 6)]])]) ""
 
 
 
@@ -177,3 +175,52 @@ getDIntValue _ _ _ = "test"
 hint :: State -> Document -> Either String State
 hint (State l) doc = Right $ ("Hint " ++ show doc) : l
 -}
+
+
+--  Danielius working area!!
+
+
+{-
+valid check data for testing: 
+DMap[("coords", DList[DMap[("col", DInteger 0),("row", DInteger 2)], DMap[("col", DInteger 0), ("row", DInteger 5)], DMap[("col", DInteger 2), ("row", DInteger 3)], DMap[("col", DInteger 3), ("row", DInteger 3)], DMap[("col", DInteger 4), ("row", DInteger 5)], DMap[("col", DInteger 2), ("row", DInteger 7)], DMap[("col", DInteger 3), ("row", DInteger 7)], DMap[("col", DInteger 4), ("row", DInteger 7)], DMap[("col", DInteger 6), ("row", DInteger 2)], DMap[("col", DInteger 6), ("row", DInteger 3)], DMap[("col", DInteger 6), ("row", DInteger 5)], DMap[("col", DInteger 6), ("row", DInteger 6)], DMap[("col", DInteger 6), ("row", DInteger 7)], DMap[("col", DInteger 6), ("row", DInteger 8)], DMap[("col", DInteger 8), ("row", DInteger 0)], DMap[("col", DInteger 8), ("row", DInteger 1)], DMap[("col", DInteger 8), ("row", DInteger 8)], DMap[("col", DInteger 9), ("row", DInteger 4)], DMap[("col", DInteger 9), ("row", DInteger 5)], DMap[("col", DInteger 9), ("row", DInteger 6)]])]
+-}
+
+parseDoc :: Document -> String -> String
+
+parseDoc DNull acc = acc ++ "null"
+
+parseDoc (DInteger d) acc = acc ++ show d
+
+parseDoc (DString d) acc = acc ++ d
+
+parseDoc (DList (x : xs)) acc =
+  parseDoc' (DList xs) (parseDoc x (acc ++ "["))
+
+parseDoc (DList []) acc = 
+  acc ++ "]"
+
+parseDoc (DMap((str, val) : xs)) acc = 
+  parseDoc' (DMap xs) (parseDoc val (acc ++ "{" ++ str ++ ": "))
+
+parseDoc (DMap[]) acc = acc ++ "}"
+
+--inner functions for parsing--
+
+parseDoc' :: Document -> String -> String
+
+parseDoc' DNull acc = acc ++ "null"
+
+parseDoc' (DInteger d) acc = acc ++ show d
+
+parseDoc' (DString d) acc = acc ++ d
+
+parseDoc' (DList (x : xs)) acc =
+  parseDoc' (DList xs) (parseDoc x (acc ++ ", ") )
+
+parseDoc' (DList []) acc = 
+  acc ++ "]"
+
+parseDoc' (DMap((str, val) : xs)) acc = 
+  parseDoc' (DMap xs) (parseDoc val (acc ++ ", " ++ str ++ ": "))
+
+parseDoc' (DMap[]) acc = acc ++ "}"
