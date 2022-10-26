@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
 module Lib2(renderDocument, hint, gameStart) where
 
 import Types ( ToDocument(..), Document(..), Check(..), Coord(..))
@@ -11,7 +12,7 @@ import Lib1 (State(..))
 -- "    [("coords",      [    [("col" , 0       ),  ("row",  2       )], (...) ]  )]"
 
 instance ToDocument Check where
-    toDocument (Check t) = error $ show $ toDocumentRecursive t (DMap [("coords", DList [])])
+    toDocument (Check t) = toDocumentRecursive t (DMap [("coords", DList [])])
 
 toDocumentRecursive :: [Coord] -> Document -> Document
 toDocumentRecursive (((Coord c r)) : xs) (DMap [(str, DList l)]) =
@@ -109,7 +110,9 @@ toDocumentRecursive _ doc = doc
 -- IMPLEMENT
 -- Renders document to yaml
 renderDocument :: Document -> String
-renderDocument doc = parseDoc (DMap[("coords", DList[DMap[("col", DInteger 0),("row", DInteger 2)], DMap[("col", DInteger 0), ("row", DInteger 5)], DMap[("col", DInteger 2), ("row", DInteger 3)], DMap[("col", DInteger 3), ("row", DInteger 3)], DMap[("col", DInteger 4), ("row", DInteger 5)], DMap[("col", DInteger 2), ("row", DInteger 7)], DMap[("col", DInteger 3), ("row", DInteger 7)], DMap[("col", DInteger 4), ("row", DInteger 7)], DMap[("col", DInteger 6), ("row", DInteger 2)], DMap[("col", DInteger 6), ("row", DInteger 3)], DMap[("col", DInteger 6), ("row", DInteger 5)], DMap[("col", DInteger 6), ("row", DInteger 6)], DMap[("col", DInteger 6), ("row", DInteger 7)], DMap[("col", DInteger 6), ("row", DInteger 8)], DMap[("col", DInteger 8), ("row", DInteger 0)], DMap[("col", DInteger 8), ("row", DInteger 1)], DMap[("col", DInteger 8), ("row", DInteger 8)], DMap[("col", DInteger 9), ("row", DInteger 4)], DMap[("col", DInteger 9), ("row", DInteger 5)], DMap[("col", DInteger 9), ("row", DInteger 6)]])]) ""
+renderDocument doc = parseDoc doc []
+
+--(DMap[("coords", DList[DMap[("col", DInteger 0),("row", DInteger 2)], DMap[("col", DInteger 0), ("row", DInteger 5)], DMap[("col", DInteger 2), ("row", DInteger 3)], DMap[("col", DInteger 3), ("row", DInteger 3)], DMap[("col", DInteger 4), ("row", DInteger 5)], DMap[("col", DInteger 2), ("row", DInteger 7)], DMap[("col", DInteger 3), ("row", DInteger 7)], DMap[("col", DInteger 4), ("row", DInteger 7)], DMap[("col", DInteger 6), ("row", DInteger 2)], DMap[("col", DInteger 6), ("row", DInteger 3)], DMap[("col", DInteger 6), ("row", DInteger 5)], DMap[("col", DInteger 6), ("row", DInteger 6)], DMap[("col", DInteger 6), ("row", DInteger 7)], DMap[("col", DInteger 6), ("row", DInteger 8)], DMap[("col", DInteger 8), ("row", DInteger 0)], DMap[("col", DInteger 8), ("row", DInteger 1)], DMap[("col", DInteger 8), ("row", DInteger 8)], DMap[("col", DInteger 9), ("row", DInteger 4)], DMap[("col", DInteger 9), ("row", DInteger 5)], DMap[("col", DInteger 9), ("row", DInteger 6)]])]) ""
 
 
 
@@ -197,7 +200,7 @@ parseDoc (DList (x : xs)) acc =
   parseDoc' (DList xs) (parseDoc x (acc ++ "["))
 
 parseDoc (DList []) acc = 
-  acc ++ "]"
+  acc ++ "[]"
 
 parseDoc (DMap((str, val) : xs)) acc = 
   parseDoc' (DMap xs) (parseDoc val (acc ++ "{" ++ str ++ ": "))
