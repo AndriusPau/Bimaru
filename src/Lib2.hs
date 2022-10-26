@@ -161,19 +161,33 @@ parseDoc (DInteger d) acc = acc ++ show d
 parseDoc (DString d) acc = acc ++ d
 
 parseDoc (DList (x : xs)) acc =
-  parseDoc (DList xs) (parseDoc x acc ++ " " )
+  parseDoc' (DList xs) (parseDoc x (acc ++ "["))
 
 parseDoc (DList []) acc = 
   acc ++ "]"
 
 parseDoc (DMap((str, val) : xs)) acc = 
-  parseDoc (DMap xs) (parseDoc val (acc ++ " " ++ str ++ ": "))
+  parseDoc' (DMap xs) (parseDoc val (acc ++ "{" ++ str ++ ": "))
 
-parseDoc (DMap[]) acc = acc
+parseDoc (DMap[]) acc = acc ++ "}"
 
-{-
-parseDocList :: Document -> String -> String
+--inner functions for parsing--
 
-parseDocList (DList (x: xs)) acc =
-  parseDocList
--}
+parseDoc' :: Document -> String -> String
+
+parseDoc' DNull acc = acc ++ "null"
+
+parseDoc' (DInteger d) acc = acc ++ show d
+
+parseDoc' (DString d) acc = acc ++ d
+
+parseDoc' (DList (x : xs)) acc =
+  parseDoc' (DList xs) (parseDoc x (acc ++ ", ") )
+
+parseDoc' (DList []) acc = 
+  acc ++ "]"
+
+parseDoc' (DMap((str, val) : xs)) acc = 
+  parseDoc' (DMap xs) (parseDoc val (acc ++ ", " ++ str ++ ": "))
+
+parseDoc' (DMap[]) acc = acc ++ "}"
