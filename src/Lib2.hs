@@ -2,11 +2,24 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Lib2(renderDocument, hint, gameStart) where
 
-import Types ( ToDocument(..), Document(..), Check )
+import Types ( ToDocument(..), Document(..), Check(..), Coord(..))
 import Lib1 (State(..))
 
 -- IMPLEMENT
 -- First, make Check an instance of ToDocument class
+
+-- Current plans on the Check structure after running it through ToDocument
+-- "DMap[(String  , DList[DMap[(String, DInteger),  (String, DInteger)], DMap[(String, DInteger), (String, DInteger)], (...) ]  )]"
+-- "    [("coords",      [    [("col" , 0       ),  ("row",  2       )], (...) ]  )]"
+
+instance ToDocument Check where
+    toDocument (Check t) = error $ show $ toDocumentRecursive t (DMap [("coords", DList [])])
+
+toDocumentRecursive :: [Coord] -> Document -> Document
+toDocumentRecursive (((Coord c r)) : xs) (DMap [(str, DList l)]) =
+  toDocumentRecursive xs (DMap [(str, DList (l ++ [DMap [("col", DInteger c), ("row", DInteger r)  ]  ]  )  )]  )
+--toDocumentRecursive [coord] (DMap [(_, DList[])]) = toDocumentRecursive
+toDocumentRecursive _ doc = doc
 
 -- !
 -- How to enter GHCI:
@@ -95,8 +108,6 @@ import Lib1 (State(..))
 
 
 
-
-
 -- IMPLEMENT
 -- Renders document to yaml
 renderDocument :: Document -> String
@@ -123,7 +134,7 @@ hint s d = Right s
 -- This adds game data to initial state
 -- Errors are reported via Either but not error 
 gameStart :: State -> Document -> Either String State
-gameStart (State l) doc 
+gameStart (State l) doc
   | doc /= DNull = Right $ gameStartRecursive (State l) doc
   | otherwise = Left "test"
 
