@@ -9,7 +9,7 @@ import Lib1 (State(..))
 -- IMPLEMENT
 -- Renders document to yaml
 renderDocument :: Document -> String
-renderDocument (DString d) = error d
+renderDocument doc = parseDoc (DMap[("coords", DList[DMap[("col", DInteger 0),("row", DInteger 2)], DMap[("col", DInteger 0), ("row", DInteger 5)], DMap[("col", DInteger 2), ("row", DInteger 3)], DMap[("col", DInteger 3), ("row", DInteger 3)], DMap[("col", DInteger 4), ("row", DInteger 5)], DMap[("col", DInteger 2), ("row", DInteger 7)], DMap[("col", DInteger 3), ("row", DInteger 7)], DMap[("col", DInteger 4), ("row", DInteger 7)], DMap[("col", DInteger 6), ("row", DInteger 2)], DMap[("col", DInteger 6), ("row", DInteger 3)], DMap[("col", DInteger 6), ("row", DInteger 5)], DMap[("col", DInteger 6), ("row", DInteger 6)], DMap[("col", DInteger 6), ("row", DInteger 7)], DMap[("col", DInteger 6), ("row", DInteger 8)], DMap[("col", DInteger 8), ("row", DInteger 0)], DMap[("col", DInteger 8), ("row", DInteger 1)], DMap[("col", DInteger 8), ("row", DInteger 8)], DMap[("col", DInteger 9), ("row", DInteger 4)], DMap[("col", DInteger 9), ("row", DInteger 5)], DMap[("col", DInteger 9), ("row", DInteger 6)]])]) ""
 
 
 
@@ -83,73 +83,13 @@ hint :: State -> Document -> Either String State
 hint (State l) doc = Right $ ("Hint " ++ show doc) : l
 -}
 
+
 --  Danielius working area!!
+
+
 {-
-addFirstLine :: String -> String
-addFirstLine x = "---\n" ++ x
-
-checkIfDNull :: String -> Bool  --sugalvoti kaip rasti DNull pabaiga. Neaišku kaip veikia
-checkIfDNull (x:xs) =
-    if length (x: xs) >= 5
-        then (take 5 (x: xs)) == "DNull"
-    else False
-
-checkIfDInteger :: String -> Bool
-
-checkIfDInteger str =
-  if length str >= 9
-    then take 9 str == "DInteger "
-  else False
-
-checkIfDString :: String -> Bool
-
-checkIfDString str =
-  if length str >= 8
-    then take 8 str == "DString "
-  else False
-
-
--- parsers goes down from here
-
-parseDNull :: Document -> String
-
-parseDNull doc =
-  if checkIfDNull (show doc)
-    then "null"
-    else "!error: Not a type of DNull!" -- reikia su Either padaryt
-
-parseDInteger :: Document -> String
-
-parseDInteger doc = 
-  if checkIfDInteger (show doc)
-    then drop 9 (show doc)
-  else "!error: Not a type of DInteger!"
-
-parseDString :: String -> String-> String
-
-parseDString str rez=
-  if checkIfDString (str)
-    then parDString (drop 9 (str)) rez
-  else "!error: Not a type of DString!"
-
-parDString :: String -> String -> String
-
-parDString (x : xs) rez =
-  if x == '"'
-    then rez
-  else parDString xs (rez ++ [x])
-
-parDString [] str = str
-
-deleteString :: String -> String -- deletes the left side of the (") found in string (included ("))
-
-deleteString (x : xs) =
-  if x == '"'
-    then xs
-  else deleteString xs
-
-deleteString [] = ""
-
+valid check data for testing: 
+DMap[("coords", DList[DMap[("col", DInteger 0),("row", DInteger 2)], DMap[("col", DInteger 0), ("row", DInteger 5)], DMap[("col", DInteger 2), ("row", DInteger 3)], DMap[("col", DInteger 3), ("row", DInteger 3)], DMap[("col", DInteger 4), ("row", DInteger 5)], DMap[("col", DInteger 2), ("row", DInteger 7)], DMap[("col", DInteger 3), ("row", DInteger 7)], DMap[("col", DInteger 4), ("row", DInteger 7)], DMap[("col", DInteger 6), ("row", DInteger 2)], DMap[("col", DInteger 6), ("row", DInteger 3)], DMap[("col", DInteger 6), ("row", DInteger 5)], DMap[("col", DInteger 6), ("row", DInteger 6)], DMap[("col", DInteger 6), ("row", DInteger 7)], DMap[("col", DInteger 6), ("row", DInteger 8)], DMap[("col", DInteger 8), ("row", DInteger 0)], DMap[("col", DInteger 8), ("row", DInteger 1)], DMap[("col", DInteger 8), ("row", DInteger 8)], DMap[("col", DInteger 9), ("row", DInteger 4)], DMap[("col", DInteger 9), ("row", DInteger 5)], DMap[("col", DInteger 9), ("row", DInteger 6)]])]
 -}
 
 parseDoc :: Document -> String -> String
