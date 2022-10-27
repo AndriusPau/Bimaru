@@ -205,9 +205,9 @@ parseDoc (DList []) acc =
 parseDoc (DMap((str, val) : xs)) acc = 
   parseDoc' (DMap xs) (parseDoc val (acc ++ "{" ++ str ++ ": "))
 
-parseDoc (DMap[]) acc = acc ++ "}"
+parseDoc (DMap[]) acc = acc ++ "{}"
 
---inner functions for parsing--
+--inner functions for parsing----
 
 parseDoc' :: Document -> String -> String
 
