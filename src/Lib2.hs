@@ -136,8 +136,11 @@ hint s d = Right s
 -- Errors are reported via Either but not error 
 gameStart :: State -> Document -> Either String State
 gameStart (State l) doc
-  | doc /= DNull = Right $ gameStartRecursive (State l) doc
-  | otherwise = Left "test"
+  | not (existsStateInfo doc "game_setup_id") = Left "Game setup Id not found."
+  | not (existsStateInfo doc "occupied_cols") = Left "Occupied collumns information is missing."
+  | not (existsStateInfo doc "occupied_rows") = Left "Occupied rows information is missing."
+  | not (existsStateInfo doc "number_of_hints") = Left "Hint information is missing."
+  | otherwise = Right $ gameStartRecursive (State l) doc
 
 gameStartRecursive :: State -> Document -> State
 gameStartRecursive (State l) (DMap ((s, d) : xs)) =
@@ -145,8 +148,14 @@ gameStartRecursive (State l) (DMap ((s, d) : xs)) =
     "game_setup_id" -> State (("toggles", DString []) : ("hints", DString []) : ((s, d) : l))
     "occupied_rows" -> gameStartRecursive (State ((s, DString (getDIntValue (show d) [] [])) : l)) (DMap xs)
     "occupied_cols" -> gameStartRecursive (State ((s, DString (getDIntValue (show d) [] [])) : l)) (DMap xs)
-    _ -> gameStartRecursive (State ((s, d) : l)) (DMap xs)
+    "number_of_hints" -> gameStartRecursive (State ((s, d) : l)) (DMap xs)
+    _ -> gameStartRecursive (State l) (DMap xs)
 gameStartRecursive _ _ = emptyState
+
+existsStateInfo :: Document -> String -> Bool
+existsStateInfo (DMap ((s, _) : xs)) str =
+  s == str || existsStateInfo (DMap xs) str
+existsStateInfo _ _ = False
 
 -- This gets a whole string of the gamestate information, which is shown at the top and the left side of the board.
 -- Meant to be used by drawGridTop, getSingleDIntValue functions and uses the getDIntValue (recursively) function.
@@ -199,10 +208,10 @@ parseDoc (DString d) acc = acc ++ d
 parseDoc (DList (x : xs)) acc =
   parseDoc' (DList xs) (parseDoc x (acc ++ "["))
 
-parseDoc (DList []) acc = 
+parseDoc (DList []) acc =
   acc ++ "[]"
 
-parseDoc (DMap((str, val) : xs)) acc = 
+parseDoc (DMap((str, val) : xs)) acc =
   parseDoc' (DMap xs) (parseDoc val (acc ++ "{" ++ str ++ ": "))
 
 parseDoc (DMap[]) acc = acc ++ "{}"
@@ -220,10 +229,10 @@ parseDoc' (DString d) acc = acc ++ d
 parseDoc' (DList (x : xs)) acc =
   parseDoc' (DList xs) (parseDoc x (acc ++ ", ") )
 
-parseDoc' (DList []) acc = 
+parseDoc' (DList []) acc =
   acc ++ "]"
 
-parseDoc' (DMap((str, val) : xs)) acc = 
+parseDoc' (DMap((str, val) : xs)) acc =
   parseDoc' (DMap xs) (parseDoc val (acc ++ ", " ++ str ++ ": "))
 
 parseDoc' (DMap[]) acc = acc ++ "}"
