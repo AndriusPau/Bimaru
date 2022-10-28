@@ -128,12 +128,9 @@ emptyState = State []
 -- Errors are reported via Either but not error 
 hint :: State -> Document -> Either String State
 hint (State l) d
---  | State ((st, doc) : xs) == emptyState = Left "Game is not started"
-  | not (existsHintInfo d "Hints") = Left "No hint info found"
-  | not (existsHintInfo d "coords") = Left "No coordinate info found"
-  | checkIfCorrectCoordInfo d = Left "Incorrect coordinate info"
-  | not (existsHintInfo d "head") = Left "No head coordinates info found"
-  | not (existsHintInfo d "tail") = Left "No tail coordinates info found"
+  | not (existsHintInfo d "Hints") = Left "No hint info found."
+  | not (existsHintInfo d "coords") = Left "No coordinate info found."
+  | not (checkIfCorrectCoordInfo d) = Left "Incorrect coordinate info."
   | otherwise = Right $ hints (State l) d
 
 hints :: State -> Document -> State
@@ -164,21 +161,22 @@ getHintsString (x : xs) str rez
 getHintsString _ _ _ = ""
 
 existsHintInfo :: Document -> String -> Bool
-existsHintInfo (DMap ((s, _) : xs)) str
+existsHintInfo (DMap ((s, d) : xs)) str
   | s == str = True
-  | otherwise = existsHintInfo (DMap xs) str
+  | otherwise = existsHintInfo d str
 existsHintInfo _ _ = False
 
---Recursively checks if each col has a coresponding row in ("Hints",DMap [("coords",DMap [("head",DMap [("col",DInteger 6),("row",DInteger 8)]),("tail",DMap [("head",DMap [("col",DInteger 6),("row",DInteger 7)])
+--Recursively checks if each col has a coresponding row
 checkIfCorrectCoordInfo :: Document -> Bool
 checkIfCorrectCoordInfo (DMap ((s, d) : xs))
   | s == "coords" = checkIfCorrectCoordInfo' d
-  | otherwise = checkIfCorrectCoordInfo (DMap xs)
+  | otherwise = checkIfCorrectCoordInfo d
 checkIfCorrectCoordInfo _ = False
 
 checkIfCorrectCoordInfo' :: Document -> Bool
-checkIfCorrectCoordInfo' (DList (d : ds))
-  | checkIfCorrectCoordInfo'' d = checkIfCorrectCoordInfo' (DList ds)
+checkIfCorrectCoordInfo' (DMap((s1, d1) : (s2, d2) : xs))
+  | s2 == "tail" && d2 == DNull = True
+  | s1 == "head" && s2 == "tail" && checkIfCorrectCoordInfo'' d1 = checkIfCorrectCoordInfo' d2 
   | otherwise = False
 checkIfCorrectCoordInfo' _ = True
 
@@ -191,6 +189,7 @@ checkIfCorrectCoordInfo'' _ = False
 checkIfCorrectCoordInfo''' :: Document -> Bool
 checkIfCorrectCoordInfo''' (DInteger _) = True
 checkIfCorrectCoordInfo''' _ = False
+
 
 -- IMPLEMENT
 -- This adds game data to initial state
@@ -236,9 +235,6 @@ getDIntValue (x : xs) str rez =
         else getDIntValue xs (str ++ [x]) rez
     else rez
 getDIntValue _ _ _ = "test"
-
-
-
 
 
 {-

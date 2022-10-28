@@ -115,4 +115,77 @@ gameStartTests = testGroup "Test start document"
   ]
 
 hintTests :: TestTree
-hintTests = testGroup "Test hint document" []
+hintTests = testGroup "Test hint document" 
+  [
+    testCase "No information missing" $
+        show (fromRight (State [("toggles",DString ""),
+        ("hints",DString ""),
+        ("game_setup_id",DString "3a7a8f44-b224-40ff-9c5c-58a1b60eab4b"),
+        ("occupied_rows",DString "1123142420"),
+        ("occupied_cols",DString "2022206033"),
+        ("number_of_hints",DInteger 10)]) 
+        (DMap[("Hints",DMap[("coords",DMap[("head",DMap[("col",DInteger 6),("row",DInteger 8)]),("tail",DMap[("head",DMap[("col",DInteger 6),("row",DInteger 7)]),("tail",DNull)])])])])
+        @?=
+        show (State [("toggles",DString ""),
+        ("hints",DString "6867"),
+        ("game_setup_id",DString "3a7a8f44-b224-40ff-9c5c-58a1b60eab4b"),
+        ("occupied_rows",DString "1123142420"),
+        ("occupied_cols",DString "2022206033"),
+        ("number_of_hints",DInteger 10)]
+
+    , testCase "Missing Hints tag" $
+        show (fromRight (State [("toggles",DString ""),
+        ("hints",DString ""),
+        ("game_setup_id",DString "3a7a8f44-b224-40ff-9c5c-58a1b60eab4b"),
+        ("occupied_rows",DString "1123142420"),
+        ("occupied_cols",DString "2022206033"),
+        ("number_of_hints",DInteger 10)]) 
+        (DMap[("coords",DMap[("head",DMap[("col",DInteger 6),("row",DInteger 8)]),("tail",DMap[("head",DMap[("col",DInteger 6),("row",DInteger 7)]),("tail",DNull)])])])
+        @?=
+        "No hint info found."
+    
+    , testCase "Missing corresponding col info" $
+        show (fromRight (State [("toggles",DString ""),
+        ("hints",DString ""),
+        ("game_setup_id",DString "3a7a8f44-b224-40ff-9c5c-58a1b60eab4b"),
+        ("occupied_rows",DString "1123142420"),
+        ("occupied_cols",DString "2022206033"),
+        ("number_of_hints",DInteger 10)]) 
+        (DMap[("Hints",DMap[("coords",DMap[("head",DMap[("row",DInteger 8)]),("tail",DMap[("head",DMap[("col",DInteger 6),("row",DInteger 7)]),("tail",DNull)])])])])
+        @?=
+        "Incorrect coordinate info."
+
+    , testCase "Missing corresponding row info" $
+        show (fromRight (State [("toggles",DString ""),
+        ("hints",DString ""),
+        ("game_setup_id",DString "3a7a8f44-b224-40ff-9c5c-58a1b60eab4b"),
+        ("occupied_rows",DString "1123142420"),
+        ("occupied_cols",DString "2022206033"),
+        ("number_of_hints",DInteger 10)]) 
+        (DMap[("Hints",DMap[("coords",DMap[("head",DMap[("col",DInteger 6)]),("tail",DMap[("head",DMap[("col",DInteger 6),("row",DInteger 7)]),("tail",DNull)])])])])
+        @?=
+        "Incorrect coordinate info."
+
+    , testCase "Missing corresponding head info" $
+        show (fromRight (State [("toggles",DString ""),
+        ("hints",DString ""),
+        ("game_setup_id",DString "3a7a8f44-b224-40ff-9c5c-58a1b60eab4b"),
+        ("occupied_rows",DString "1123142420"),
+        ("occupied_cols",DString "2022206033"),
+        ("number_of_hints",DInteger 10)]) 
+        (DMap[("Hints",DMap[("coords",DMap[("tail",DMap[("head",DMap[("col",DInteger 6),("row",DInteger 7)]),("tail",DNull)])])])])
+        @?=
+        "Incorrect coordinate info."
+
+    , testCase "Missing corresponding tail info" $
+        show (fromRight (State [("toggles",DString ""),
+        ("hints",DString ""),
+        ("game_setup_id",DString "3a7a8f44-b224-40ff-9c5c-58a1b60eab4b"),
+        ("occupied_rows",DString "1123142420"),
+        ("occupied_cols",DString "2022206033"),
+        ("number_of_hints",DInteger 10)]) 
+        (DMap[("Hints",DMap[("coords",DMap[("head",DMap[("col",DInteger 6),("row",DInteger 8)]),("tail",DMap[("head",DMap[("col",DInteger 6),("row",DInteger 7)])])])])])
+        @?=
+        "Incorrect coordinate info."
+
+  ]
