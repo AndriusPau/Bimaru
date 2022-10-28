@@ -127,11 +127,14 @@ emptyState = State []
 -- Adds hint data to the game state
 -- Errors are reported via Either but not error 
 hint :: State -> Document -> Either String State
-hint (State ((st, doc) : xs)) d
-  | State ((st, doc) : xs) == emptyState = Left "Game is not started"
-  | doc == DNull = Left "Hint passed from server is empty"
-  | getAvailableHintNum <= 0 = Left "No hints available"
-  | otherwise = Right $ hints (State ((st, doc) : xs)) d
+hint (State l) d
+--  | State ((st, doc) : xs) == emptyState = Left "Game is not started"
+  | not (existsHintInfo d "Hints") = Left "No hint info found"
+  | not (existsHintInfo d "coords") = Left "No coordinate info found"
+  | checkIfCorrectCoordInfo d = Left "Incorrect coordinate info"
+  | not (existsHintInfo d "head") = Left "No head coordinates info found"
+  | not (existsHintInfo d "tail") = Left "No tail coordinates info found"
+  | otherwise = Right $ hints (State l) d
 
 hints :: State -> Document -> State
 hints (State l) (DMap ((_, d) : _)) = hintState (State l) (State []) d
@@ -160,15 +163,34 @@ getHintsString (x : xs) str rez
   | otherwise = rez
 getHintsString _ _ _ = ""
 
-getAvailableHintNum :: State -> Int
-getAvailableHintNum (State ((st, doc) : xs))
-  | st == "number_of_hints" = charToInt $ head $ getDIntValue (show doc) [] []
-  | otherwise = getAvailableHintNum (State xs)
-getAvailableHintNum _ = 0
+existsHintInfo :: Document -> String -> Bool
+existsHintInfo (DMap ((s, _) : xs)) str
+  | s == str = True
+  | otherwise = existsHintInfo (DMap xs) str
+existsHintInfo _ _ = False
 
---See if document is correct and return true bool and return left string if false
+--Recursively checks if each col has a coresponding row in ("Hints",DMap [("coords",DMap [("head",DMap [("col",DInteger 6),("row",DInteger 8)]),("tail",DMap [("head",DMap [("col",DInteger 6),("row",DInteger 7)])
+checkIfCorrectCoordInfo :: Document -> Bool
+checkIfCorrectCoordInfo (DMap ((s, d) : xs))
+  | s == "coords" = checkIfCorrectCoordInfo' d
+  | otherwise = checkIfCorrectCoordInfo (DMap xs)
+checkIfCorrectCoordInfo _ = False
 
+checkIfCorrectCoordInfo' :: Document -> Bool
+checkIfCorrectCoordInfo' (DList (d : ds))
+  | checkIfCorrectCoordInfo'' d = checkIfCorrectCoordInfo' (DList ds)
+  | otherwise = False
+checkIfCorrectCoordInfo' _ = True
 
+checkIfCorrectCoordInfo'' :: Document -> Bool
+checkIfCorrectCoordInfo'' (DMap ((s1, d1) : (s2, d2) : xs))
+  | s1 == "col" && s2 == "row" = checkIfCorrectCoordInfo''' d1 && checkIfCorrectCoordInfo''' d2
+  | otherwise = False
+checkIfCorrectCoordInfo'' _ = False
+
+checkIfCorrectCoordInfo''' :: Document -> Bool
+checkIfCorrectCoordInfo''' (DInteger _) = True
+checkIfCorrectCoordInfo''' _ = False
 
 -- IMPLEMENT
 -- This adds game data to initial state
@@ -274,48 +296,3 @@ parseDoc' (DMap((str, val) : xs)) acc =
   parseDoc' (DMap xs) (parseDoc val (acc ++ ", " ++ str ++ ": "))
 
 parseDoc' (DMap[]) acc = acc ++ "}"
-
-
----------------------------------------------------------------------------------------------------
--- Useful helper functions.
-
--- Converts a digit in int format to a char
--- Int - The digit in int format.
--- Char - The result char.
-intToChar :: Int -> Char
-intToChar x
-  | x == 0 = '0'
-  | x == 1 = '1'
-  | x == 2 = '2'
-  | x == 3 = '3'
-  | x == 4 = '4'
-  | x == 5 = '5'
-  | x == 6 = '6'
-  | x == 7 = '7'
-  | x == 8 = '8'
-  | x == 9 = '9'
-intToChar _ = ' '
-
--- Converts a digit in char format to an int
--- Char - The digit in char format.
--- Int - The result int.
-charToInt :: Char -> Int
-charToInt x
-  | x == '0' = 0
-  | x == '1' = 1
-  | x == '2' = 2
-  | x == '3' = 3
-  | x == '4' = 4
-  | x == '5' = 5
-  | x == '6' = 6
-  | x == '7' = 7
-  | x == '8' = 8
-  | x == '9' = 9
-charToInt _ = 0
-
--- Checks if the char is a number.
--- Char - The char...
--- Bool - The result...
-checkDigit :: Char -> Bool
-checkDigit c =
-  c >= '0' && c <= '9'
