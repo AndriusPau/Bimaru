@@ -47,3 +47,11 @@ instance FromJSON Document where
 
 class ToDocument a where
     toDocument :: a -> Document
+
+instance ToDocument Check where
+    toDocument (Check t) = toDocumentRecursive t (DMap [("coords", DList [])])
+
+toDocumentRecursive :: [Coord] -> Document -> Document
+toDocumentRecursive (((Coord c r)) : xs) (DMap [(str, DList l)]) =
+  toDocumentRecursive xs (DMap [(str, DList (l ++ [DMap [("col", DInteger c), ("row", DInteger r)  ]  ]  )  )]  )
+toDocumentRecursive _ doc = doc

@@ -1,24 +1,7 @@
-{-# OPTIONS_GHC -Wno-orphans #-}
 module Lib2(renderDocument, hint, gameStart) where
 
-import Types ( ToDocument(..), Document(..), Check(..), Coord(..))
+import Types ( Document(..))
 import Lib1 (State(..))
-
--- IMPLEMENT
--- First, make Check an instance of ToDocument class
-
--- Current plans on the Check structure after running it through ToDocument
--- "DMap[(String  , DList[DMap[(String, DInteger),  (String, DInteger)], DMap[(String, DInteger), (String, DInteger)], (...) ]  )]"
--- "    [("coords",      [    [("col" , 0       ),  ("row",  2       )], (...) ]  )]"
-
-instance ToDocument Check where
-    toDocument (Check t) = toDocumentRecursive t (DMap [("coords", DList [])])
-
-toDocumentRecursive :: [Coord] -> Document -> Document
-toDocumentRecursive (((Coord c r)) : xs) (DMap [(str, DList l)]) =
-  toDocumentRecursive xs (DMap [(str, DList (l ++ [DMap [("col", DInteger c), ("row", DInteger r)  ]  ]  )  )]  )
---toDocumentRecursive [coord] (DMap [(_, DList[])]) = toDocumentRecursive
-toDocumentRecursive _ doc = doc
 
 -- !
 -- How to enter GHCI:
@@ -40,95 +23,87 @@ toDocumentRecursive _ doc = doc
 
 -- Working yaml formats, that the server can accept:
 -- "{coords: [{col: 0, row: 2}, {col: 0, row: 5}, {col: 2, row: 3}, {col: 3, row: 3}, {col: 4, row: 5}, {col: 2, row: 7}, {col: 3, row: 7}, {col: 4, row: 7}, {col: 6, row: 2}, {col: 6, row: 3}, {col: 6, row: 5}, {col: 6, row: 6}, {col: 6, row: 7}, {col: 6, row: 8}, {col: 8, row: 0}, {col: 8, row: 1}, {col: 8, row: 8}, {col: 9, row: 4}, {col: 9, row: 5}, {col: 9, row: 6}]}"
-{-
-  "---\n" ++ 
-  "coords:\n" ++ 
-  
-  "- col: 0\n" ++ 
-  "  row: 2\n" ++ 
-
-  "- col: 0\n" ++ 
-  "  row: 5\n" ++
-
-  "- col: 2\n" ++ 
-  "  row: 3\n" ++
-
-  "- col: 3\n" ++ 
-  "  row: 3\n" ++
-
-  "- col: 4\n" ++ 
-  "  row: 5\n" ++
-
-  "- col: 2\n" ++ 
-  "  row: 7\n" ++
-
-  "- col: 3\n" ++ 
-  "  row: 7\n" ++
-
-  "- col: 4\n" ++ 
-  "  row: 7\n" ++
-
-  "- col: 6\n" ++ 
-  "  row: 2\n" ++
-
-  "- col: 6\n" ++ 
-  "  row: 3\n" ++
-
-  "- col: 6\n" ++ 
-  "  row: 5\n" ++
-
-  "- col: 6\n" ++ 
-  "  row: 6\n" ++
-
-  "- col: 6\n" ++ 
-  "  row: 7\n" ++
-  
-  "- col: 6\n" ++ 
-  "  row: 8\n" ++
-
-  "- col: 8\n" ++ 
-  "  row: 0\n" ++
-
-  "- col: 8\n" ++ 
-  "  row: 1\n" ++
-
-  "- col: 8\n" ++ 
-  "  row: 8\n" ++
-
-  "- col: 9\n" ++ 
-  "  row: 4\n" ++
-
-  "- col: 9\n" ++ 
-  "  row: 5\n" ++
-
-  "- col: 9\n" ++ 
-  "  row: 6\n"
--}
-
-
 
 -- IMPLEMENT
 -- Renders document to yaml
 renderDocument :: Document -> String
 renderDocument doc = parseDoc doc []
 
---(DMap[("coords", DList[DMap[("col", DInteger 0),("row", DInteger 2)], DMap[("col", DInteger 0), ("row", DInteger 5)], DMap[("col", DInteger 2), ("row", DInteger 3)], DMap[("col", DInteger 3), ("row", DInteger 3)], DMap[("col", DInteger 4), ("row", DInteger 5)], DMap[("col", DInteger 2), ("row", DInteger 7)], DMap[("col", DInteger 3), ("row", DInteger 7)], DMap[("col", DInteger 4), ("row", DInteger 7)], DMap[("col", DInteger 6), ("row", DInteger 2)], DMap[("col", DInteger 6), ("row", DInteger 3)], DMap[("col", DInteger 6), ("row", DInteger 5)], DMap[("col", DInteger 6), ("row", DInteger 6)], DMap[("col", DInteger 6), ("row", DInteger 7)], DMap[("col", DInteger 6), ("row", DInteger 8)], DMap[("col", DInteger 8), ("row", DInteger 0)], DMap[("col", DInteger 8), ("row", DInteger 1)], DMap[("col", DInteger 8), ("row", DInteger 8)], DMap[("col", DInteger 9), ("row", DInteger 4)], DMap[("col", DInteger 9), ("row", DInteger 5)], DMap[("col", DInteger 9), ("row", DInteger 6)]])]) ""
-
-
-
-
-
 -- This is very initial state of your program
 emptyState :: State
 emptyState = State []
-
 
 -- IMPLEMENT
 -- Adds hint data to the game state
 -- Errors are reported via Either but not error 
 hint :: State -> Document -> Either String State
---hint (State l) h = Right $ State $ ("Hint " ++ show h) : l
-hint s d = Right s
+hint (State l) d
+  | not (existsHintInfo d "coords") = Left "No coordinate info found."
+  | not (checkIfCorrectCoordInfo d) = Left "Incorrect coordinate info."
+  | show (hints (State l) d) == show emptyState = Left "Hints not found in passed state."
+  | otherwise = Right $ hints (State l) d
+
+hints :: State -> Document -> State
+hints (State l) (DMap ((_, d) : _)) = hintState (State l) (State []) d
+hints _ _ = emptyState
+
+hintState :: State -> State -> Document -> State
+hintState (State ((st, doc) : xs)) (State temp) d =
+  if st == "hints"
+    then State (temp ++ (("hints", setHint d) : xs))
+    else hintState (State xs) (State (temp ++ [(st, doc)])) d
+hintState _ _ _ = emptyState
+
+setHint :: Document -> Document
+setHint doc = DString (getHintsString (show doc) [] [])
+
+getHintsString :: String -> String -> String -> String
+getHintsString (x : xs) str rez
+  | x /= 'N' =
+    if length str == 9
+      then
+        if str == "DInteger "
+          then getHintsString xs [] (rez ++ [x])
+          else getHintsString xs (tail str ++ [x]) rez
+      else getHintsString xs (str ++ [x]) rez
+  | null rez = ""
+  | otherwise = rez
+getHintsString _ _ _ = ""
+
+existsHintInfo :: Document -> String -> Bool
+existsHintInfo (DMap ((s, d) : _)) str
+  | s == str = True
+  | otherwise = existsHintInfo d str
+existsHintInfo _ _ = False
+
+--Recursively checks if each col has a coresponding row
+checkIfCorrectCoordInfo :: Document -> Bool
+checkIfCorrectCoordInfo (DMap ((s, d) : _))
+  | s == "coords" && d == DNull = True
+  | s == "coords" = checkIfCorrectCoordInfo' d
+  | otherwise = checkIfCorrectCoordInfo d
+checkIfCorrectCoordInfo _ = False
+
+checkIfCorrectCoordInfo' :: Document -> Bool
+checkIfCorrectCoordInfo' (DMap((s1, d1) : (s2, d2) : _))
+  | s2 == "tail" && d2 == DNull = True
+  | s1 /= "head" && s2 == "tail" = False
+  | s1 == "head" && s2 /= "tail" = False
+  | s1 == "head" && s2 == "tail" && checkIfCorrectCoordInfo'' d1 = checkIfCorrectCoordInfo' d2 
+  | otherwise = False
+checkIfCorrectCoordInfo' (DMap((s1, d1) : _))
+ | s1 == "tail" && d1 == DNull = True
+checkIfCorrectCoordInfo' _ = False
+
+checkIfCorrectCoordInfo'' :: Document -> Bool
+checkIfCorrectCoordInfo'' (DMap ((s1, d1) : (s2, d2) : _))
+  | s1 == "col" && s2 == "row" = checkIfCorrectCoordInfo''' d1 && checkIfCorrectCoordInfo''' d2
+  | otherwise = False
+checkIfCorrectCoordInfo'' _ = False
+
+checkIfCorrectCoordInfo''' :: Document -> Bool
+checkIfCorrectCoordInfo''' (DInteger _) = True
+checkIfCorrectCoordInfo''' _ = False
 
 
 -- IMPLEMENT
@@ -176,26 +151,6 @@ getDIntValue (x : xs) str rez =
     else rez
 getDIntValue _ _ _ = "test"
 
-
-
-
-
-{-
--- IMPLEMENT
--- Adds hint data to the game state
--- Errors are reported via Either but not error 
-hint :: State -> Document -> Either String State
-hint (State l) doc = Right $ ("Hint " ++ show doc) : l
--}
-
-
---  Danielius working area!!
-
-
-{-
-valid check data for testing: 
-DMap[("coords", DList[DMap[("col", DInteger 0),("row", DInteger 2)], DMap[("col", DInteger 0), ("row", DInteger 5)], DMap[("col", DInteger 2), ("row", DInteger 3)], DMap[("col", DInteger 3), ("row", DInteger 3)], DMap[("col", DInteger 4), ("row", DInteger 5)], DMap[("col", DInteger 2), ("row", DInteger 7)], DMap[("col", DInteger 3), ("row", DInteger 7)], DMap[("col", DInteger 4), ("row", DInteger 7)], DMap[("col", DInteger 6), ("row", DInteger 2)], DMap[("col", DInteger 6), ("row", DInteger 3)], DMap[("col", DInteger 6), ("row", DInteger 5)], DMap[("col", DInteger 6), ("row", DInteger 6)], DMap[("col", DInteger 6), ("row", DInteger 7)], DMap[("col", DInteger 6), ("row", DInteger 8)], DMap[("col", DInteger 8), ("row", DInteger 0)], DMap[("col", DInteger 8), ("row", DInteger 1)], DMap[("col", DInteger 8), ("row", DInteger 8)], DMap[("col", DInteger 9), ("row", DInteger 4)], DMap[("col", DInteger 9), ("row", DInteger 5)], DMap[("col", DInteger 9), ("row", DInteger 6)]])]
--}
 
 parseDoc :: Document -> String -> String
 
