@@ -27,7 +27,7 @@ import Lib1 (State(..))
 -- IMPLEMENT
 -- Renders document to yaml
 renderDocument :: Document -> String
-renderDocument doc = parseDoc doc []
+renderDocument doc = parseDocToYaml doc
 
 -- This is very initial state of your program
 emptyState :: State
@@ -191,3 +191,183 @@ parseDoc' (DMap((str, val) : xs)) acc =
   parseDoc' (DMap xs) (parseDoc val (acc ++ ", " ++ str ++ ": "))
 
 parseDoc' (DMap[]) acc = acc ++ "}"
+
+
+-- fuctions to parse in NOT FLOW type YAML  -- 
+
+
+parseDocToYaml :: Document -> String
+
+parseDocToYaml doc = docToString doc "---" ""
+
+
+docToString :: Document -> String -> String -> String
+
+docToString DNull acc spaces = acc ++ "null"
+
+docToString (DInteger d) acc spaces = acc ++ show d
+
+docToString (DString d) acc spaces = acc ++ d
+
+docToString (DList (x : xs)) acc spaces =
+  docToString' (DList xs) (docToString x (acc ++ "\n" ++ spaces ++ "- ") (spaces ++ "  ")) (spaces ++ "  ")
+
+docToString (DList []) acc spaces =
+  acc ++ "[]"
+
+docToString (DMap((str, DList val) : xs)) acc spaces =
+  docToString' (DMap xs) (docToString (DList val) (acc ++ "\n" ++ str ++ ":") spaces) spaces
+
+docToString (DMap((str, val) : xs)) acc spaces =
+  docToString' (DMap xs) (docToString val (acc ++ str ++ ": ") spaces) (spaces ++ "")
+
+docToString (DMap[]) acc spaces = acc ++ "{}"
+
+--inner functions for parsing----
+
+docToString' :: Document -> String -> String -> String
+
+docToString' DNull acc spaces = acc ++ "null"
+
+docToString' (DInteger d) acc spaces = acc ++ show d
+
+docToString' (DString d) acc spaces = acc ++ d
+
+docToString' (DList (x : xs)) acc spaces =
+  docToString' (DList xs) (docToString x (acc ++ "\n" ++ init(init(spaces)) ++ "- ") spaces) spaces
+
+docToString' (DList []) acc spaces=
+  acc ++ ""
+
+docToString' (DMap((str, val) : xs)) acc spaces=
+  docToString' (DMap xs) (docToString val (acc ++ "\n" ++ spaces ++ str ++ ": ") spaces) spaces
+
+docToString' (DMap[]) acc spaces= acc ++ ""
+
+
+-- docToString :: Document -> String -> String -> String
+
+-- docToString DNull acc spaces = acc ++ "\n" ++ spaces ++ "null" 
+
+-- docToString (DInteger d) acc spaces = acc ++ "\n" ++ spaces ++ show d
+
+-- docToString (DString d) acc spaces = acc ++ "\n" ++ spaces ++ d
+
+-- docToString (DList (x : xs)) acc spaces =
+--   docToString' (DList xs) (docToString'' x acc (spaces ++ "  ")) spaces
+
+-- docToString (DList []) acc spaces =
+--   acc ++ "\n" ++ spaces ++ "[]"
+
+
+
+
+-- docToString (DMap((str, val) : xs)) acc spaces =
+--   docToString''' (DMap xs) (docToString''' val (acc ++ "\n" ++ str ++ ":@") spaces ) spaces
+
+-- docToString (DMap[]) acc spaces = acc ++ "{}"
+
+-- --inner functions for parsing----
+
+-- docToString' :: Document -> String -> String -> String
+
+-- docToString' DNull acc spaces = acc ++ "\n" ++ spaces ++ "null" 
+
+-- docToString' (DInteger d) acc spaces = acc ++ "\n" ++ spaces ++ show d
+
+-- docToString' (DString d) acc spaces = acc ++ "\n" ++ spaces ++ d
+
+-- docToString' (DList (x : xs)) acc spaces =
+--   docToString' (DList xs) (docToString x acc (spaces ++ "  ")) spaces 
+
+-- docToString' (DList []) acc spaces =
+--   acc   --sutvarkyti su empty List atspausdinimu
+
+
+
+-- docToString' (DMap((str, val) : xs)) acc spaces =
+--   docToString' (DMap xs) (docToString val (acc ++ ", " ++ str ++ ": ") spaces ) spaces 
+
+-- docToString' (DMap[]) acc spaces = acc ++ "}"
+
+
+-- -- docToString'' :: Document -> String -> String -> String -> String
+
+-- -- docToString'' DNull acc spaces slist = acc ++ "\n" ++ spaces ++ "null" 
+
+-- -- docToString'' (DInteger d) acc spaces slist = acc ++ "\n" ++ spaces ++ show d
+
+-- -- docToString'' (DString d) acc spaces slist = acc ++ "\n" ++ spaces ++ d
+
+
+
+
+-- -- docToString'' (DList (x : xs)) acc spaces slist=
+-- --   docToString (DList xs) (docToString'' x (acc) (spaces ++ "  ") (slist ++ "- ")) spaces slist
+
+-- -- docToString'' (DList []) acc spaces slist=
+-- --   acc
+
+
+
+-- -- docToString'' (DMap((str, val) : xs)) acc spaces slist=
+-- --   docToString' (DMap xs) (docToString val (acc ++ ", " ++ str ++ ": ") spaces slist) spaces slist
+
+-- -- docToString'' (DMap[]) acc spaces slist= acc ++ "}"
+
+-- docToString'' :: Document -> String -> String -> String
+
+-- docToString'' DNull acc spaces = acc ++ "\n" ++ tail(tail(spaces)) ++ "- " ++ "null" 
+
+-- docToString'' (DInteger d) acc spaces = acc ++ "\n" ++ tail(tail(spaces)) ++ "- " ++ show d
+
+-- docToString'' (DString d) acc spaces = acc ++ "\n" ++ tail(tail(spaces)) ++ "- " ++ d
+
+-- docToString'' (DList ((DList x) : xs)) acc spaces =
+--   docToString' (DList xs) (docToString'' (DList x) acc (spaces ++ "  ") ) (tail(tail(spaces)) ++ "- ") -- cia truksta vieno - kai ji isimi is spaces ++ "- "
+
+-- docToString'' (DList (x : xs)) acc spaces =
+--   docToString' (DList xs) (docToString'' x acc (spaces ++ "- ") ) spaces
+
+
+
+-- docToString'' (DList []) acc spaces =
+--   acc ++ "\n" ++ tail(tail(spaces)) ++ "- " ++ "[]"
+
+
+
+
+-- docToString'' (DMap((str, val) : xs)) acc spaces =
+--   docToString' (DMap xs) (docToString val (acc ++ "{" ++ str ++ ": ") spaces ) spaces
+
+-- docToString'' (DMap[]) acc spaces= acc ++ "{}"
+
+
+-- -- Darbui su DMap ---
+
+-- docToString''' :: Document -> String -> String -> String
+
+-- docToString''' DNull acc spaces = acc ++ "null" 
+
+-- docToString''' (DInteger d) acc spaces = acc ++ show d
+
+-- docToString''' (DString d) acc spaces = acc ++ "- " ++ d
+
+-- docToString''' (DList ((DList x) : xs)) acc spaces=
+--   docToString''' (DList xs) (docToString''' (DList x) acc (spaces ++ "  ") ) (tail(tail(spaces)) ++ "- ")  -- cia truksta vieno - kai ji isimi is spaces ++ "- "
+
+-- docToString''' (DList (x : xs)) acc spaces=
+--   docToString''' (DList xs) (docToString''' x acc (spaces ++ "- ") ) spaces
+
+
+
+-- docToString''' (DList []) acc spaces=
+--   acc ++ "\n" ++ tail(tail(spaces)) ++ "- " ++ "[]"
+
+
+
+
+-- docToString''' (DMap((str, val) : xs)) acc spaces=
+--   docToString' (DMap xs) (docToString val (acc ++ "\n" ++ str ++ ":#") spaces) spaces
+
+-- docToString''' (DMap[]) acc spaces = acc ++ "{}"
