@@ -1,0 +1,25 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"assert.h": "c",
+			"string.h": "c",
+			"stdbool.h": "c",
+			"aplib.h": "c",
+			"type_traits": "c",
+			"typeinfo": "c",
+			"stdlib.h": "c",
+			"ap_ld4_graphs.h": "c"
+		},
+		"java.project.sourcePaths": [
+			"SD",
+			"LD1",
+			"GUI",
+			""
+		]
+	}
+}

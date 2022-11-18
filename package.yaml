@@ -28,6 +28,7 @@ dependencies:
 - base64
 - bytestring
 - lens
+- QuickCheck
 - scientific
 - string-conversions
 - split
@@ -70,6 +71,15 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - bimaru-client
+  bimaru-client-3:
+    main:                Main.hs
+    source-dirs:         app3
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - bimaru-client
 
 tests:
   bimaru-client-test:
@@ -83,3 +93,4 @@ tests:
     - bimaru-client
     - tasty
     - tasty-hunit
+    - tasty-quickcheck
