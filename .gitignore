@@ -1,2 +1,5 @@
 .stack-work/
+.vscode/tasks.json
+.gitignore
+bimaru-client.code-workspace
 *~
