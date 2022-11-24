@@ -9,7 +9,7 @@ module Lib1
   )
 where
 
-import Types
+import Types(Check(..), Coord(..), Document(..))
 
 ---------------------------------------------------------------------------------------------------
 -- State settings

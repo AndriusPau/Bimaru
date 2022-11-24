@@ -1,20 +1,49 @@
 import Test.Tasty
 import Test.Tasty.HUnit
+import Test.Tasty.QuickCheck
+import Data.String.Conversions
+import Data.Yaml as Y ( encode )
 
 import Lib2 (renderDocument, gameStart, hint)
-import Lib1 (State (..))
+import Lib3 (parseDocument)
 import Types (Document(..))
-import Data.Either
 
 main :: IO ()
-main = defaultMain (
-  testGroup "Tests"
+main = defaultMain (testGroup "Tests" 
+    [
+    toYamlTests,
+    fromYamlTests,
+    gameStartTests,
+    hintTests,
+    properties
+    ])
+
+
+properties :: TestTree
+properties = testGroup "Properties" [golden, dogfood]
+
+golden :: TestTree
+golden = testGroup "Handles foreign rendering"
   [
-  toYamlTests,
-  gameStartTests,
-  hintTests
+    testProperty "parseDocument (Data.Yaml.encode doc) == doc" $
+      \doc -> parseDocument (cs (Y.encode doc)) == Right doc
   ]
-  )
+
+dogfood :: TestTree
+dogfood = testGroup "Eating your own dogfood"
+  [  
+    testProperty "parseDocument (renderDocument doc) == doc" $
+      \doc -> parseDocument (renderDocument doc) == Right doc
+  ]
+
+fromYamlTests :: TestTree
+fromYamlTests = testGroup "Document from yaml"
+  [   testCase "null" $
+        parseDocument "null" @?= Right DNull
+    -- IMPLEMENT more test cases:
+    -- * other primitive types/values
+    -- * nested types
+  ]
 
 toYamlTests :: TestTree
 toYamlTests = testGroup "Document to yaml"
@@ -46,9 +75,11 @@ toYamlTests = testGroup "Document to yaml"
         renderDocument (DMap [("List", DList[DInteger 1, DInteger 2, DInteger 3, DInteger 4])]) @?= "{List: [1, 2, 3, 4]}"
     , testCase "DMap with a DMap which has a DMap inside" $
         renderDocument (DMap[("first", DMap[("second", DMap[("third", DString "The end")])])]) @?= "{first: {second: {third: The end}}}"
-
+    -- IMPLEMENT more test cases:
+    -- * other primitive types/values
+    -- * nested types
   ]
-
+    
 gameStartTests :: TestTree
 gameStartTests = testGroup "Test start document"
   [   testCase "No information missing" $
@@ -254,5 +285,4 @@ hintTestsState = testGroup "Test State info"
         ("tail",DMap[("head",DMap[("col",DInteger 6),("row",DInteger 7)]),("tail",DNull)])])]))
         @?=
         "Hints not found in passed state."
-
     ]
