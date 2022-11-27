@@ -72,7 +72,7 @@ toYamlTests = testGroup "Document to yaml"
     , testCase "Int" $
         renderDocument (DInteger 789123) @?= "---\n789123"
     , testCase "String" $
-        renderDocument (DString "Test123") @?= "---\nTest123"
+        renderDocument (DString "Test123") @?= "---\n\"Test123\""
 
 
     , testCase "Empty List" $
@@ -95,7 +95,7 @@ toYamlTests = testGroup "Document to yaml"
     , testCase "DMap with list of ints inside" $
         renderDocument (DMap [("List", DList[DInteger 1, DInteger 2, DInteger 3, DInteger 4])]) @?= "---\nList:\n- 1\n- 2\n- 3\n- 4"
     , testCase "DMap with a DMap which has a DMap inside" $
-        renderDocument (DMap[("first", DMap[("second", DMap[("third", DString "The end")])])]) @?= "---\nfirst:\n  second:\n    third: The end"
+        renderDocument (DMap[("first", DMap[("second", DMap[("third", DString "The end")])])]) @?= "---\nfirst:\n  second:\n    third: \"The end\""
     , testCase "DMap with a DMap which has a DMap with a List inside" $
         renderDocument (DMap[("first", DMap[("second", DMap[("List", DList[DInteger 1, DInteger 2, DList[]])])])]) @?= "---\nfirst:\n  second:\n    List:\n    - 1\n    - 2\n    - []"
     , testCase "DMap with a DMap which has a DMap with a List inside" $
@@ -113,7 +113,7 @@ listOfDNulls :: String
 listOfDNulls = "---\n- null\n- null\n- null"
 
 listOfDStrings :: String
-listOfDStrings = "---\n- Hello\n- World\n- !!"
+listOfDStrings = "---\n- \"Hello\"\n- \"World\"\n- \"!!\""
 
 listOfDMaps :: String
 listOfDMaps = "---\n- 1.1: 1\n  1.2: 2\n- 2.1: 1\n- 3.1: 1\n  3.2: 2"

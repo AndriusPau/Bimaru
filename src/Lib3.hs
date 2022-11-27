@@ -40,9 +40,9 @@ parseDocument yaml = do
     (a,b) <- runParser (parseDocument' 0) input
     case (a,b) of
       (DNull, "") -> Right DNull
-      (DNull, _) -> Left "Incorrect yaml"
+      (DNull, _) -> Left "error"
       (doc, "") -> Right doc
-      (doc, _) -> Right doc
+      (doc, _) -> Left "error"
 
 
 -- This adds game data to initial state
@@ -172,7 +172,7 @@ parseDInteger :: Parser Document
 parseDInteger = DInteger <$> (optional (spanParserMany isSpace) *> intLiteral)
 
 parseDString :: Parser Document
-parseDString = DString <$> (optional (spanParserMany isSpace) *> optional (parseChar '"') *> stringLiteral <* optional (parseChar '\n') <* optional (parseChar '"'))
+parseDString = DString <$> (optional (spanParserMany isSpace) *> optional (parseChar '"') *> optional (parseChar '\'') *> stringLiteral <* optional (parseChar '\'') <* optional (parseChar '"') <* optional (parseChar '\n'))
 
 parseDMap :: Int -> Parser Document
 parseDMap prevIndent = Parser $ \input ->
@@ -202,26 +202,40 @@ parseListItem prevIndent = Parser $ \input ->
 
 parseEmptyDList :: Parser Document
 parseEmptyDList = Parser $ \input ->
-  let result = runParser (parseStr "[]") input in
+  let result = runParser (spanParserMany isSpace *> parseStr "[]") input in
     case result of
       Left a -> Left a
-      _ -> Right (DList [], drop 2 input)
+      _ -> Right (DList [], drop 2 (dropWhile isSpace input))
 
 parseEmptyDMap :: Parser Document
 parseEmptyDMap = Parser $ \input ->
-  let result = runParser (parseStr "{}") input in
+  let result = runParser (spanParserMany isSpace *> parseStr "{}") input in
     case result of
       Left a -> Left a
-      _ -> Right (DMap [], drop 2 input)
+      _ -> Right (DMap [], drop 2 (dropWhile isSpace input))
+
+parseEmptyDStringDoubleQuotes :: Parser Document
+parseEmptyDStringDoubleQuotes = Parser $ \input ->
+  let result = runParser (spanParserMany isSpace *> parseStr "\"\"") input in
+    case result of
+      Left a -> Left a
+      _ -> Right (DString "", drop 2 (dropWhile isSpace input))
+
+parseEmptyDStringSingleQuotes :: Parser Document
+parseEmptyDStringSingleQuotes = Parser $ \input ->
+  let result = runParser (spanParserMany isSpace *> parseStr "''") input in
+    case result of
+      Left a -> Left a
+      _ -> Right (DString "", drop 2 (dropWhile isSpace input))
 
 parseDocument' :: Int -> Parser Document
-parseDocument' prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDMap <|> parseEmptyDList <|> parseDList  prevIndent <|> parseDMap prevIndent  <|> parseDString
+parseDocument' prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDStringDoubleQuotes <|> parseEmptyDStringSingleQuotes <|> parseEmptyDMap <|> parseEmptyDList <|> parseDList  prevIndent <|> parseDMap prevIndent  <|> parseDString
 
 parseDocumentInList :: Int -> Parser Document
-parseDocumentInList prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDMap <|> parseEmptyDList <|> parseDList (prevIndent+1) <|> parseDMap (prevIndent+1) <|> parseDString
+parseDocumentInList prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDStringDoubleQuotes <|> parseEmptyDStringSingleQuotes <|> parseEmptyDMap <|> parseEmptyDList <|> parseDList (prevIndent+1) <|> parseDMap (prevIndent+1) <|> parseDString
 
 parseDocumentInDMap :: Int -> Parser Document
-parseDocumentInDMap prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDMap <|> parseEmptyDList <|> parseDList prevIndent <|> parseDMap (prevIndent+1) <|> parseDString
+parseDocumentInDMap prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDStringDoubleQuotes <|> parseEmptyDStringSingleQuotes <|> parseEmptyDMap <|> parseEmptyDList <|> parseDList prevIndent <|> parseDMap (prevIndent+1) <|> parseDString
 
 -- HELPER FUNCTIONS
 
