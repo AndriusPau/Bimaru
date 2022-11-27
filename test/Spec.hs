@@ -15,8 +15,8 @@ main = defaultMain (testGroup "Tests"
     [
     toYamlTests,
     fromYamlTests,
-    -- gameStartTests,
-    -- hintTests,
+    gameStartTests,
+    hintTests,
     properties
     ])
 
@@ -154,6 +154,9 @@ gameStartTests = testGroup "gameStart function tests:"
         ("occupied_cols",DString "2022206033"),
         ("number_of_hints",DInteger 10)])
   ]
+
+hintTests :: TestTree
+hintTests = testGroup "Test hint document" [hintTestsServer, hintTestsState]
 
 hintTestsServer :: TestTree
 hintTestsServer = testGroup "Test hint document server side."

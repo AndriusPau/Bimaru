@@ -89,7 +89,7 @@ checkIfCorrectCoordInfo' (DMap((s1, d1) : (s2, d2) : _))
   | s2 == "tail" && d2 == DNull = True
   | s1 /= "head" && s2 == "tail" = False
   | s1 == "head" && s2 /= "tail" = False
-  | s1 == "head" && s2 == "tail" && checkIfCorrectCoordInfo'' d1 = checkIfCorrectCoordInfo' d2 
+  | s1 == "head" && s2 == "tail" && checkIfCorrectCoordInfo'' d1 = checkIfCorrectCoordInfo' d2
   | otherwise = False
 checkIfCorrectCoordInfo' (DMap((s1, d1) : _))
  | s1 == "tail" && d1 == DNull = True
@@ -151,51 +151,6 @@ getDIntValue (x : xs) str rez =
     else rez
 getDIntValue _ _ _ = "test"
 
-
---
--- for parsing a document to YAML flow type
---
-
-parseDoc :: Document -> String -> String
-
-parseDoc DNull acc = acc ++ "null"
-
-parseDoc (DInteger d) acc = acc ++ show d
-
-parseDoc (DString d) acc = acc ++ d
-
-parseDoc (DList (x : xs)) acc =
-  parseDoc' (DList xs) (parseDoc x (acc ++ "["))
-
-parseDoc (DList []) acc =
-  acc ++ "[]"
-
-parseDoc (DMap((str, val) : xs)) acc =
-  parseDoc' (DMap xs) (parseDoc val (acc ++ "{" ++ str ++ ": "))
-
-parseDoc (DMap[]) acc = acc ++ "{}"
-
---inner functions for parsing----
-
-parseDoc' :: Document -> String -> String
-
-parseDoc' DNull acc = acc ++ "null"
-
-parseDoc' (DInteger d) acc = acc ++ show d
-
-parseDoc' (DString d) acc = acc ++ d
-
-parseDoc' (DList (x : xs)) acc =
-  parseDoc' (DList xs) (parseDoc x (acc ++ ", ") )
-
-parseDoc' (DList []) acc =
-  acc ++ "]"
-
-parseDoc' (DMap((str, val) : xs)) acc =
-  parseDoc' (DMap xs) (parseDoc val (acc ++ ", " ++ str ++ ": "))
-
-parseDoc' (DMap[]) acc = acc ++ "}"
-
 --
 -- for parsing a document to YAML with indentation
 --
@@ -207,85 +162,85 @@ parseDocToYaml doc = docToString doc "" "" 0
 
 docToString :: Document -> String -> String -> Int -> String
 
-docToString DNull acc spaces nest = acc ++ "null" ++ "\n"
+docToString DNull acc _ _ = acc ++ "null" ++ "\n"
 
-docToString (DInteger x) acc spaces nest = acc ++ show x ++ "\n"
+docToString (DInteger x) acc _ _ = acc ++ show x ++ "\n"
 
-docToString (DString x) acc spaces nest = acc ++ show x ++ "\n"
+docToString (DString x) acc _ _ = acc ++ show x ++ "\n"
 
 docToString (DList(DMap x: xs)) acc spaces nest =
-  docToString' (DList xs) (docToString (DMap x) (acc ++ (printSpaces nest acc) ++ "- ") (spaces ++ "  ") (nest + 1)) (spaces ++ "") nest
+  docToString' (DList xs) (docToString (DMap x) (acc ++ printSpaces nest acc ++ "- ") (spaces ++ "  ") (nest + 1)) (spaces ++ "") nest
 
 docToString (DList(DList x: xs)) acc spaces nest =
-  docToString' (DList xs) (docToString (DList x) (acc ++ (printSpaces nest acc) ++ "- ") (spaces ++ "  ") (nest + 1)) (spaces ++ "") nest
+  docToString' (DList xs) (docToString (DList x) (acc ++ printSpaces nest acc ++ "- ") (spaces ++ "  ") (nest + 1)) (spaces ++ "") nest
 
 docToString(DList (x : xs)) acc spaces nest =
-  docToString' (DList xs) (docToString x (acc ++ (printSpaces nest acc)++ "- ") spaces nest) spaces nest
+  docToString' (DList xs) (docToString x (acc ++ printSpaces nest acc++ "- ") spaces nest) spaces nest
 
-docToString(DList[]) acc spaces nest = acc ++ "[]\n"
+docToString(DList[]) acc _ _ = acc ++ "[]\n"
 
 docToString (DMap ((str, DMap []) : xs)) acc spaces nest =
-  docToString' (DMap xs) (docToString (DMap []) (acc ++ (printSpaces nest acc) ++ str ++ ": ") spaces (nest + 1)) spaces nest
+  docToString' (DMap xs) (docToString (DMap []) (acc ++ printSpaces nest acc ++ str ++ ": ") spaces (nest + 1)) spaces nest
 
 docToString (DMap ((str, DMap doc) : xs)) acc spaces nest =
-  docToString' (DMap xs) (docToString (DMap doc) (acc ++ (printSpaces nest acc) ++ str ++ ":\n") spaces (nest + 1)) spaces nest
+  docToString' (DMap xs) (docToString (DMap doc) (acc ++ printSpaces nest acc ++ str ++ ":\n") spaces (nest + 1)) spaces nest
 
 docToString (DMap ((str, DList []) : xs)) acc spaces nest =
-  docToString' (DMap xs) (docToString (DList []) (acc ++ (printSpaces nest acc) ++ str ++ ": ") spaces (nest)) spaces nest
+  docToString' (DMap xs) (docToString (DList []) (acc ++ printSpaces nest acc ++ str ++ ": ") spaces nest) spaces nest
 
 docToString (DMap ((str, DList doc) : xs)) acc spaces nest =
-  docToString' (DMap xs) (docToString (DList doc) (acc ++ (printSpaces nest acc) ++ str ++ ":\n") spaces (nest)) spaces nest
+  docToString' (DMap xs) (docToString (DList doc) (acc ++ printSpaces nest acc ++ str ++ ":\n") spaces nest) spaces nest
 
 docToString (DMap ((str, doc) : xs)) acc spaces nest =
-  docToString' (DMap xs) (docToString doc (acc ++ (printSpaces nest acc) ++ str ++ ": ") spaces nest) spaces nest
+  docToString' (DMap xs) (docToString doc (acc ++ printSpaces nest acc ++ str ++ ": ") spaces nest) spaces nest
 
-docToString (DMap[]) acc paces nest = acc ++ "{}\n"
+docToString (DMap[]) acc _ _ = acc ++ "{}\n"
 
 
 docToString' :: Document -> String -> String -> Int -> String
 
-docToString' DNull acc spaces nest = acc ++ "null" ++ "\n"
+docToString' DNull acc _ _ = acc ++ "null" ++ "\n"
 
-docToString' (DInteger x) acc spaces nest = acc ++ show x ++ "\n"
+docToString' (DInteger x) acc _ _ = acc ++ show x ++ "\n"
 
-docToString' (DString x) acc spaces nest = acc ++ show x ++ "\n"
+docToString' (DString x) acc _ _ = acc ++ show x ++ "\n"
 
 docToString' (DList (DMap x : xs)) acc spaces nest =
-  docToString (DList(DMap x: xs)) (acc) spaces nest
+  docToString (DList(DMap x: xs)) acc spaces nest
 
 docToString' (DList (DList x : xs)) acc spaces nest =
-  docToString (DList(DList x: xs)) (acc) spaces nest
+  docToString (DList(DList x: xs)) acc spaces nest
 
 
 docToString' (DList (x : xs)) acc spaces nest=
-  docToString' (DList xs) (docToString x (acc ++ (printSpaces nest acc) ++ "- ") spaces nest) spaces nest
+  docToString' (DList xs) (docToString x (acc ++ printSpaces nest acc ++ "- ") spaces nest) spaces nest
 
-docToString' (DList []) acc spaces nest = acc
+docToString' (DList []) acc _ _ = acc
 
 docToString' (DMap ((str, DMap []) : xs)) acc spaces nest =
-  docToString' (DMap xs) (docToString (DMap []) (acc ++ (printSpaces nest acc) ++ str ++ ": ") spaces (nest + 1)) spaces nest
+  docToString' (DMap xs) (docToString (DMap []) (acc ++ printSpaces nest acc ++ str ++ ": ") spaces (nest + 1)) spaces nest
 
 docToString' (DMap ((str, DMap doc) : xs)) acc spaces nest =
-  docToString' (DMap xs) (docToString (DMap doc) (acc ++ (printSpaces nest acc) ++ str ++ ":\n") spaces (nest + 1)) spaces nest
+  docToString' (DMap xs) (docToString (DMap doc) (acc ++ printSpaces nest acc ++ str ++ ":\n") spaces (nest + 1)) spaces nest
 
 docToString' (DMap ((str, DList doc) : xs)) acc spaces nest =
-  docToString' (DMap xs) (docToString (DList doc) (acc ++ (printSpaces nest acc) ++ str ++ ": ") spaces (nest)) spaces nest
+  docToString' (DMap xs) (docToString (DList doc) (acc ++ printSpaces nest acc ++ str ++ ": ") spaces nest) spaces nest
 
 docToString' (DMap ((str, doc) : xs)) acc spaces nest =
-  docToString' (DMap xs) (docToString doc (acc ++ (printSpaces nest acc) ++ str ++ ": ") spaces nest) spaces nest
+  docToString' (DMap xs) (docToString doc (acc ++ printSpaces nest acc ++ str ++ ": ") spaces nest) spaces nest
 
-docToString' (DMap[]) acc paces nest = acc
+docToString' (DMap[]) acc _ _ = acc
 
 
 
 printSpaces :: Int -> String -> String
 
-printSpaces 0 str = ""
+printSpaces 0 _ = ""
 
-printSpaces count [] = 
-  "  " ++ (printSpaces (count - 1) [])
+printSpaces count [] =
+  "  " ++ printSpaces (count - 1) []
 
-printSpaces count str = 
-  if (take 2 (reverse str)) /= " -"
-    then"  " ++ (printSpaces (count - 1) str)
+printSpaces count str =
+  if take 2 (reverse str) /= " -"
+    then"  " ++ printSpaces (count - 1) str
   else ""

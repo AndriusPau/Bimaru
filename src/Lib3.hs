@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE LambdaCase #-}
 module Lib3(hint, gameStart, parseDocument, GameStart, Hint
     ) where
 
@@ -23,7 +24,7 @@ instance Applicative Parser where
   (Parser p1) <*> (Parser p2) = Parser $ \input -> do
     (f, rest) <- p1 input
     (a, rest') <- p2 rest
-    Right $ (f a, rest')
+    Right (f a, rest')
 
 instance Alternative Parser where
   empty = Parser $ const $ Left "empty"
@@ -114,11 +115,12 @@ getHintsString _ _ _ = ""
 --Returns Right Parser Char on successful parse holding the parsed character and the rest of the input: String -> (Char, String)
 --Returns Left String with error message on failure
 parseChar :: Char -> Parser Char
-parseChar c = Parser $ \input ->
-  case input of
-    (x : xs) | x == c -> Right (c, xs)
-             | otherwise -> Left $ "Expected '" ++ [c] ++ "'," ++ " but got '" ++ [x] ++ "'"
-    [] -> Left $ "Expected '" ++ [c] ++ "', but got empty string"
+parseChar c = Parser $ \case
+  (x : xs)
+    | x == c -> Right (c, xs)
+    | otherwise
+    -> Left $ "Expected '" ++ [c] ++ "'," ++ " but got '" ++ [x] ++ "'"
+  [] -> Left $ "Expected '" ++ [c] ++ "', but got empty string"
 
 --This parses a string of characters from the input string
 --Returns Right Parser String on successful parse holding the parsed string and the rest of the input: String -> (String, String)
@@ -147,24 +149,24 @@ spanParserSome f = some $ parseIf f
 --Returns Left String with error message on failure
 parseIf :: (Char -> Bool) -> Parser Char
 parseIf f =
-  Parser $ \input ->
-    case input of
-      y:ys
-        | f y       -> Right (y, ys)
-        | otherwise -> Left $ "Expected a character, but got '" ++ [y] ++ "'"
-      [] -> Left $ "Expected a character, but reached end of string"
+  Parser $ \case
+  y : ys
+    | f y -> Right (y, ys)
+    | otherwise
+    -> Left $ "Expected a character, but got '" ++ [y] ++ "'"
+  [] -> Left "Expected a character, but reached end of string"
 
 --This parses a single character from the input string if the given predicate is true without removing the character from the rest of the input
 --Returns Right Parser Char on successful parse holding placeholder character and input: String -> (Char, String)
 --Returns Left String with error message on failure
 parseIf' :: (Char -> Bool) -> Parser Char
 parseIf' f =
-  Parser $ \input ->
-    case input of
-      y:ys
-        | f y       -> Right (' ', y:ys)
-        | otherwise -> Left $ "Expected a character, but got '" ++ [y] ++ "'"
-      [] -> Left $ "Expected a character, but reached end of string"
+  Parser $ \case
+  y : ys
+    | f y -> Right (' ', y : ys)
+    | otherwise
+    -> Left $ "Expected a character, but got '" ++ [y] ++ "'"
+  [] -> Left "Expected a character, but reached end of string"
 
 --This parses a dash indicating a negative number and digits or digits if the number is positive
 --Returns Right Parser Int on successful parse holding the parsed integer and the rest of the input: String -> (Int, String)
