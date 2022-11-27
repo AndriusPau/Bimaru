@@ -147,6 +147,11 @@ instance FromDocument GameStart where
         | not (existsStateInfo doc "number_of_hints") = Left "Hint information is missing."
         | otherwise = Right (GameStart doc)
 
+existsStateInfo :: Document -> String -> Bool
+existsStateInfo (DMap ((s, _) : xs)) str =
+  s == str || existsStateInfo (DMap xs) str
+existsStateInfo _ _ = False
+
 instance FromDocument Hint where
     fromDocument doc 
         | not (existsHintInfo doc "coords") = Left "No coordinate info found."
@@ -187,8 +192,3 @@ checkIfCorrectCoordInfo'' _ = False
 checkIfCorrectCoordInfo''' :: Document -> Bool
 checkIfCorrectCoordInfo''' (DInteger _) = True
 checkIfCorrectCoordInfo''' _ = False
-
-existsStateInfo :: Document -> String -> Bool
-existsStateInfo (DMap ((s, _) : xs)) str =
-  s == str || existsStateInfo (DMap xs) str
-existsStateInfo _ _ = False
