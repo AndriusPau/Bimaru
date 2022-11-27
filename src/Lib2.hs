@@ -27,7 +27,7 @@ import Lib1 (State(..))
 -- IMPLEMENT
 -- Renders document to yaml
 renderDocument :: Document -> String
-renderDocument doc = parseDoc doc []
+renderDocument = parseDocToYaml
 
 -- This is very initial state of your program
 emptyState :: State
@@ -152,6 +152,10 @@ getDIntValue (x : xs) str rez =
 getDIntValue _ _ _ = "test"
 
 
+--
+-- for parsing a document to YAML flow type
+--
+
 parseDoc :: Document -> String -> String
 
 parseDoc DNull acc = acc ++ "null"
@@ -191,3 +195,94 @@ parseDoc' (DMap((str, val) : xs)) acc =
   parseDoc' (DMap xs) (parseDoc val (acc ++ ", " ++ str ++ ": "))
 
 parseDoc' (DMap[]) acc = acc ++ "}"
+
+--
+-- for parsing a document to YAML with indentation
+--
+
+parseDocToYaml :: Document -> String
+
+parseDocToYaml doc = docToString doc "---\n" "" 0
+
+
+docToString :: Document -> String -> String -> Int -> String
+
+docToString DNull acc spaces nest = acc ++ "null"
+
+docToString (DInteger x) acc spaces nest = acc ++ (show x)
+
+docToString (DString x) acc spaces nest = acc ++ x
+
+docToString (DList(DMap x: xs)) acc spaces nest =
+  docToString' (DList xs) (docToString (DMap x) (acc ++ (printSpaces nest acc) ++ "- ") (spaces ++ "  ") (nest + 1)) (spaces ++ "") nest
+
+docToString (DList(DList x: xs)) acc spaces nest =
+  docToString' (DList xs) (docToString (DList x) (acc ++ (printSpaces nest acc) ++ "- ") (spaces ++ "  ") (nest + 1)) (spaces ++ "") nest
+
+docToString(DList (x : xs)) acc spaces nest =
+  docToString' (DList xs) (docToString x (acc ++ (printSpaces nest acc)++ "- ") spaces nest) spaces nest
+
+docToString(DList[]) acc spaces nest = acc ++ "[]"
+
+docToString (DMap ((str, DMap []) : xs)) acc spaces nest =
+  docToString' (DMap xs) (docToString (DMap []) (acc ++ (printSpaces nest acc) ++ str ++ ": ") spaces (nest + 1)) spaces nest
+
+docToString (DMap ((str, DMap doc) : xs)) acc spaces nest =
+  docToString' (DMap xs) (docToString (DMap doc) (acc ++ (printSpaces nest acc) ++ str ++ ":\n") spaces (nest + 1)) spaces nest
+
+docToString (DMap ((str, DList doc) : xs)) acc spaces nest =
+  docToString' (DMap xs) (docToString (DList doc) (acc ++ (printSpaces nest acc) ++ str ++ ":\n") spaces (nest)) spaces nest
+
+docToString (DMap ((str, doc) : xs)) acc spaces nest =
+  docToString' (DMap xs) (docToString doc (acc ++ (printSpaces nest acc) ++ str ++ ": ") spaces nest) spaces nest
+
+docToString (DMap[]) acc paces nest = acc ++ "{}"
+
+
+docToString' :: Document -> String -> String -> Int -> String
+
+docToString' DNull acc spaces nest = acc ++ "null"
+
+docToString' (DInteger x) acc spaces nest = acc ++ (show x)
+
+docToString' (DString x) acc spaces nest = acc ++ x
+
+docToString' (DList (DMap x : xs)) acc spaces nest =
+  docToString (DList(DMap x: xs)) (acc ++ "\n") spaces nest
+
+docToString' (DList (DList x : xs)) acc spaces nest =
+  docToString (DList(DList x: xs)) (acc ++ "\n") spaces nest
+
+
+docToString' (DList (x : xs)) acc spaces nest=
+  docToString' (DList xs) (docToString x (acc ++ "\n" ++ (printSpaces nest acc) ++ "- ") spaces nest) spaces nest
+
+docToString' (DList []) acc spaces nest = acc
+
+docToString' (DMap ((str, DMap []) : xs)) acc spaces nest =
+  docToString' (DMap xs) (docToString (DMap []) (acc ++ (printSpaces nest acc) ++ str ++ ": ") spaces (nest + 1)) spaces nest
+
+docToString' (DMap ((str, DMap doc) : xs)) acc spaces nest =
+  docToString' (DMap xs) (docToString (DMap doc) (acc ++ "\n"  ++ (printSpaces nest acc) ++ str ++ ":\n") spaces (nest + 1)) spaces nest
+
+docToString' (DMap ((str, DList doc) : xs)) acc spaces nest =
+  docToString' (DMap xs) (docToString (DList doc) (acc ++ "\n"  ++ (printSpaces nest acc) ++ str ++ "- ") spaces (nest)) spaces nest
+
+docToString' (DMap ((str, doc) : xs)) acc spaces nest =
+  docToString' (DMap xs) (docToString doc (acc ++ "\n" ++ (printSpaces nest acc) ++ str ++ ": ") spaces nest) spaces nest
+
+docToString' (DMap[]) acc paces nest = acc
+
+
+
+printSpaces :: Int -> String -> String
+
+printSpaces 0 str = ""
+
+printSpaces count [] = 
+  "  " ++ (printSpaces (count - 1) [])
+
+printSpaces count str = 
+  if (take 2 (reverse str)) /= " -"
+    then"  " ++ (printSpaces (count - 1) str)
+  else ""
