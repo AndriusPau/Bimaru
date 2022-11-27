@@ -5,6 +5,7 @@ module Types (
     FromDocument, fromDocument
 ) where
 
+import qualified Data.Map as Map
 import qualified Data.Aeson as A
 import Data.Yaml as Y
 import Data.HashMap.Strict as HMS
@@ -103,7 +104,7 @@ arbitraryDMap :: Gen Document
 arbitraryDMap = do
     s <- getSize
     n <- choose (0, min 4 s)
-    DMap <$> vectorOf n ((,) <$> arbitraryK <*> arbitraryDocument)
+    DMap . Map.toList . Map.fromList <$> vectorOf n ((,) <$> arbitraryK <*> arbitraryDocument)
     where
         arbitraryK = do
             s <- getSize

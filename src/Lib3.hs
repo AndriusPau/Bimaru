@@ -243,7 +243,7 @@ addSpace acc n = addSpace ("  " ++ acc) (n-1)
 
 countSpaces :: String -> Int
 countSpaces str =
-  let (a, b) = span isSpaceOrNewLine str in
+  let (a, _) = span isSpaceOrNewLine str in
     if null a
       then 0
     else

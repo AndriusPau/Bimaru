@@ -37,6 +37,7 @@ dependencies:
 - wreq
 - yaml
 - vector
+- containers
 
 ghc-options:
 - -Wall
