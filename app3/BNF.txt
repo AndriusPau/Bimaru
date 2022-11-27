@@ -1,0 +1,59 @@
+#Rules
+<digit>::= '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+<number>::= <digit> | <number> <digit>
+<letter>::= "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" |
+ "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "a" | 
+ "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | 
+ "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z"
+<dash>::= '-'
+<double-quotation>::= '"'
+<single-quotation>::= "'"
+<new-line>::= '\n'
+<colon>::= ':'
+<quoted-char>::= <letter> | <number> | <space>
+<unquoted-char>::= <letter> | <number>
+<multiple-spaces>::= <space> | <multiple-spaces> <space>
+<multiple-spaces-or-nospaces>::= <multiple-spaces> | empty
+<multiple-lines>::= <new-line> | <multiple-lines> <new-line>
+<key>::= <unquoted-char> | <key> <unquoted-char>
+
+#String
+<word-without-quotation>::= <letter> <word-with-quotation>
+<word-with-quotation>::= <quoted-char> | <word-with-quotation> <quoted-char>
+<string-without-quotation>::= (<key> <colon> <space> | <multiple-spaces-or-nospaces) <word-without-quotation> <new-line>
+<string-with-quotation>::= (<key> <colon> <space> | <multiple-spaces-or-nospaces)
+(<double-quotation> <word-with-quotation> <double-quotation>
+| <single-quotation> <word-with-quotation> <single-quotation>) <new-line>
+<string>::= <string-with-quotation> | <string-without-quotation>
+
+#Integer
+<integer>::= (<key> <colon> <space> | <multiple-spaces-or-nospaces>)  (<dash> | empty) <number> <new-line>
+
+#Null
+<null>::= (<key> <colon> <space> | empty )  "null" <new-line>
+
+<value>::= <null> | <integer> | <string> | <list> | <map>
+<base-value>::= <null> | <integer> | <string>
+
+#List
+<multiple-dash-space>::= (<dash> <space>) | (<multiple-dash-space> <dash> <space>)
+<list>::= (<multiple-list-components>
+| <indentation-level> ((<dash> <space>) * <m> <indentation-increase-n>) <value>)
+
+<list-component>::= <indentation-level> <dash> <space> <base-value>
+<multiple-list-components>::= <list-component> | <multiple-list-components> <list-component>
+
+#Map
+<multiple-values>::= <value> | <multiple-values> <value>
+<multiple-base-values>::= <base-value> | <multiple-base-values> <base-value>
+<map>::=  ((<indentation-level> <key> <colon> <space> <base-value>) 
+| (<indentation-level> <key> <colon> <new-line> <indentation-increase> <map>) 
+| (<indentation-level> <key> <colon> <space> "{}" <new-line>)
+| (<indentation-level> <key> <colon> <space> "[]" <new-line>)
+| (<indentation-level> <key> <colon> <new-line> <indentation-level> <list>))
+
+<n>::= <number>
+<m>::= <number>
+<indentation-level>::= <space> * 2 * <n>
+<indentation-increase>::= <space> * 2 * (<n> + 1)
+<indentation-increase-n>::= <space> * 2 * (<n> + <m>)
