@@ -45,26 +45,26 @@ fromYamlTests :: TestTree
 fromYamlTests = testGroup "Document from yaml"
   [   testCase "Null value" $
         parseDocument "null\n" @?= Right DNull
-    -- ,  testCase "String without quotes" $
-    --     parseDocument "ThisIsAString\n" @?= Right (DString "ThisIsAString")
-    -- ,  testCase "String with quotes" $
-    --     parseDocument "\"This is a string\"\n" @?= Right (DString "This is a string")
-    -- ,  testCase "Positive integer" $
-    --     parseDocument "123\n" @?= Right (DInteger 123)
-    -- ,  testCase "Negative integer" $
-    --     parseDocument "-123\n" @?= Right (DInteger (-123))
-    -- ,  testCase "List of strings without quotes" $
-    --     parseDocument "- ThisIsAString\n- ThisIsAlsoAString\n- ThisIsNotANumber\n" @?= Right (DList [DString "ThisIsAString", DString "ThisIsAlsoAString", DString "ThisIsNotANumber"])
-    -- ,  testCase "List of strings with quotes" $
-    --     parseDocument "- \"This is a string\"\n- \"This is also a string\"\n- \"This is a list of chars\"\n" @?= Right (DList [DString "This is a string", DString "This is also a string", DString "This is a list of chars"])
-    -- ,  testCase "List of integers" $
-    --     parseDocument "- 123\n- -456\n- 789\n" @?= Right (DList [DInteger 123, DInteger (-456), DInteger 789])
-    -- ,  testCase "List of DMaps" $
-    --     parseDocument "- DMap1: 123\n  DMap2: 456\n- DMap1: 789\n  DMap2: 101112\n" @?= Right (DList [DMap [("DMap1", DInteger 123), ("DMap2", DInteger 456)], DMap [("DMap1", DInteger 789), ("DMap2", DInteger 101112)]])
-    -- ,  testCase "List of DMaps with DLists inside" $
-    --     parseDocument "- DMap1: 123\n  DMap2: 456\n  DMap3:\n  - 789\n  - 101112\n- DMap1: 131415\n  DMap2: 161718\n  DMap3:\n  - 192021\n  - 222324\n" @?= Right (DList [DMap [("DMap1", DInteger 123), ("DMap2", DInteger 456), ("DMap3", DList [DInteger 789, DInteger 101112])], DMap [("DMap1", DInteger 131415), ("DMap2", DInteger 161718), ("DMap3", DList [DInteger 192021, DInteger 222324])]])
-    -- ,  testCase "DMap with DLists inside" $
-    --     parseDocument "DMap1: 123\nDMap2: 456\nDMap3:\n- 789\n- 101112\n" @?= Right (DMap [("DMap1", DInteger 123), ("DMap2", DInteger 456), ("DMap3", DList [DInteger 789, DInteger 101112])])
+    ,  testCase "String without quotes" $
+        parseDocument "ThisIsAString\n" @?= Right (DString "ThisIsAString")
+    ,  testCase "String with quotes" $
+        parseDocument "\"This is a string\"\n" @?= Right (DString "This is a string")
+    ,  testCase "Positive integer" $
+        parseDocument "123\n" @?= Right (DInteger 123)
+    ,  testCase "Negative integer" $
+        parseDocument "-123\n" @?= Right (DInteger (-123))
+    ,  testCase "List of strings without quotes" $
+        parseDocument "- ThisIsAString\n- ThisIsAlsoAString\n- ThisIsNotANumber\n" @?= Right (DList [DString "ThisIsAString", DString "ThisIsAlsoAString", DString "ThisIsNotANumber"])
+    ,  testCase "List of strings with quotes" $
+        parseDocument "- \"This is a string\"\n- \"This is also a string\"\n- \"This is a list of chars\"\n" @?= Right (DList [DString "This is a string", DString "This is also a string", DString "This is a list of chars"])
+    ,  testCase "List of integers" $
+        parseDocument "- 123\n- -456\n- 789\n" @?= Right (DList [DInteger 123, DInteger (-456), DInteger 789])
+    ,  testCase "List of DMaps" $
+        parseDocument "- DMap1: 123\n  DMap2: 456\n- DMap1: 789\n  DMap2: 101112\n" @?= Right (DList [DMap [("DMap1", DInteger 123), ("DMap2", DInteger 456)], DMap [("DMap1", DInteger 789), ("DMap2", DInteger 101112)]])
+    ,  testCase "List of DMaps with DLists inside" $
+        parseDocument "- DMap1: 123\n  DMap2: 456\n  DMap3:\n  - 789\n  - 101112\n- DMap1: 131415\n  DMap2: 161718\n  DMap3:\n  - 192021\n  - 222324\n" @?= Right (DList [DMap [("DMap1", DInteger 123), ("DMap2", DInteger 456), ("DMap3", DList [DInteger 789, DInteger 101112])], DMap [("DMap1", DInteger 131415), ("DMap2", DInteger 161718), ("DMap3", DList [DInteger 192021, DInteger 222324])]])
+    ,  testCase "DMap with DLists inside" $
+        parseDocument "DMap1: 123\nDMap2: 456\nDMap3:\n- 789\n- 101112\n" @?= Right (DMap [("DMap1", DInteger 123), ("DMap2", DInteger 456), ("DMap3", DList [DInteger 789, DInteger 101112])])
   ]
 
 

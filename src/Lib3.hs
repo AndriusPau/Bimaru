@@ -3,28 +3,10 @@
 module Lib3(hint, gameStart, parseDocument, GameStart, Hint
     ) where
 
-import Data.String.Conversions
-
-import Data.Yaml as Y (encodeWith, defaultEncodeOptions, defaultFormatOptions, setWidth, setFormat)
-
-
 import Types ( Document(..), GameStart(..), Hint(..))
 import Lib1 (State(..), emptyState)
-import Lib2 (renderDocument)
 import Control.Applicative
 import Data.Char
-
-stringTest :: String
-stringTest = "l:\n  MYb:\n  - ' 4k'\n  - 'Hj '\n  - s: []\n    A:\n    - - - -3\n        - 'fi   '\n      - 'Y'\n      - {}\n      - ' t'\n    - 'u 71 '\n    - - 5\n    - - -5\n      - AuxxI:\n        - mTmMJ:\n          - 1\n          - V: -2\n            nntE: 4\n            D:\n            - []\n            - t\n            - -1\n            fc:\n            - rx:\n              - 3\n              Q: -2\n            - 5\n            - c4Vj\n            - '0 '\n          - 1\n          - 3\n          q:\n          - ''\n          - hFI: hq0\n            Xl:\n            - -2\n            - I\n            LGG:\n            - kKirH: 1\n              FTmSj:\n                njX: []\n                Df:\n                - {}\n                j:\n                - -5\n                - 1\n                - VfmD:\n                    HQE: 2\n                    aMA:\n                      hD:\n                        k:\n                          Fk: '71'\n                        lbY:\n                        - '79I5 '\n                        - 4\n                      Wre: 0\n                  Ta: 1\n                - uQ: -3\n                  r: []\n                  Js: {}\n                QDFD:\n                  Ou: 2\n                  s: 3\n                  cgSN: -1\n            JyyyN: {}\n          - 5\n          - r8\n      - 4 9u\nXk: []\nxTJE:\n  q: vns\n  ZvODt:\n  - oy: I\n    oS: 5\n  - IqpS:\n      xG: 0\n      M: []\n      ZFET:\n      - ayL: e  u\n        XGZu:\n          nq:\n            j: 'Ss F '\n            DnS: k5\n        QQz: 3\n      - ''\n      uqu:\n        XaecS: []\n        m:\n          oa:\n          - - {}\n          - 'w '\n          - -5\n          - []\n          fZf: 2\n          eR:\n          - - -3\n            - uA:\n                HWOU: 2\n                air: 0\n                P: -1\n              lpSG: -3\n          - Vop: Tb7j\n            qRSz:\n              EST: -3\n            abzD:\n            - - - - -4\n                - ''\n                - e: 2\n                  GURFO: l V\n                  Ouv: 1\n                - Bw:\n                  - -2\n                  - ''\n                  - 'H   '\n              - 3\n            - 'bP8 '\n            - {}\n            F: ' z'\n    GxSj: -2\n  WoY: -1\nYUYL: {}\n"
-
-stringTest' :: String
-stringTest' = "bDX:\n  IAGq: 1\n  SrmO: \"5\"\ngIzz: \"G  h6\"\niA- []\n"
-
-docTest :: String
-docTest = renderDocument (DMap [("bDX",DMap [("IAGq",DInteger 1),("SrmO",DString "5")]),("gIzz",DString "G  h6"),("iA",DList [])])
-
-friendlyEncode :: Document -> String
-friendlyEncode doc = cs (Y.encodeWith (setFormat (setWidth Nothing defaultFormatOptions) defaultEncodeOptions) doc)
 
 
 newtype Parser a = Parser
@@ -50,17 +32,15 @@ instance Alternative Parser where
       Left _ -> p2 input
       x      -> x
 
--- IMPLEMENT
--- Parses a document from yaml
+
+-- This parses a string of YAML format
+-- Returns Right Document on successful parse
+-- Returns Left String with error message on failure
 parseDocument :: String -> Either String Document
 parseDocument yaml = do
-    (a,b) <- runParser (parseDocument' 0) yaml
-    case (a,b) of
-      (DNull, "") -> Right DNull
-      (DNull, _) -> Left "error"
-      (doc, "") -> Right doc
-      (doc, b) -> Left (show doc ++ "||||||||||||||||||||||||||||||||||||" ++ b)
-
+    case runParser (parseDocument' 0) yaml of
+      Left err -> Left err
+      Right (doc, rest) -> if null rest then Right doc else Left $ "parseDocument: not all input consumed; rest: " ++ rest
 
 -- This adds game data to initial state
 -- Errors are not reported since GameStart is already totally valid adt
@@ -130,7 +110,9 @@ getHintsString (x : xs) str rez
   | otherwise = rez
 getHintsString _ _ _ = ""
 
-
+--This parses a single character from the input string
+--Returns Right Parser Char on successful parse holding the parsed character and the rest of the input: String -> (Char, String)
+--Returns Left String with error message on failure
 parseChar :: Char -> Parser Char
 parseChar c = Parser $ \input ->
   case input of
@@ -138,6 +120,9 @@ parseChar c = Parser $ \input ->
              | otherwise -> Left $ "Expected '" ++ [c] ++ "'," ++ " but got '" ++ [x] ++ "'"
     [] -> Left $ "Expected '" ++ [c] ++ "', but got empty string"
 
+--This parses a string of characters from the input string
+--Returns Right Parser String on successful parse holding the parsed string and the rest of the input: String -> (String, String)
+--Returns Left String with error message on failure
 parseStr :: String -> Parser String
 parseStr str = Parser $ \input ->
   let result = runParser (traverse parseChar str) input in
@@ -145,12 +130,21 @@ parseStr str = Parser $ \input ->
     Left _ -> Left $ "Expected \"" ++ str ++ "\", but got \"" ++ input ++ "\""
     _ -> result
 
+--This parses many (0 or more) characters from the input string while the given predicate is true
+--Returns Right Parser String on successful parse holding the parsed string and the rest of the input: String -> (String, String)
+--Returns Left String with error message on failure
 spanParserMany :: (Char -> Bool) -> Parser String
 spanParserMany f = many $ parseIf f
 
+--This parses some (1 or more) characters from the input string while the given predicate is true
+--Returns Right Parser String on successful parse holding the parsed string and the rest of the input: String -> (String, String)
+--Returns Left String with error message on failure
 spanParserSome :: (Char -> Bool) -> Parser String
 spanParserSome f = some $ parseIf f
 
+--This parses a single character from the input string if the given predicate is true
+--Returns Right Parser Char on successful parse holding the parsed character and the rest of the input: String -> (Char, String)
+--Returns Left String with error message on failure
 parseIf :: (Char -> Bool) -> Parser Char
 parseIf f =
   Parser $ \input ->
@@ -160,6 +154,9 @@ parseIf f =
         | otherwise -> Left $ "Expected a character, but got '" ++ [y] ++ "'"
       [] -> Left $ "Expected a character, but reached end of string"
 
+--This parses a single character from the input string if the given predicate is true without removing the character from the rest of the input
+--Returns Right Parser Char on successful parse holding placeholder character and input: String -> (Char, String)
+--Returns Left String with error message on failure
 parseIf' :: (Char -> Bool) -> Parser Char
 parseIf' f =
   Parser $ \input ->
@@ -169,15 +166,27 @@ parseIf' f =
         | otherwise -> Left $ "Expected a character, but got '" ++ [y] ++ "'"
       [] -> Left $ "Expected a character, but reached end of string"
 
+--This parses a dash indicating a negative number and digits or digits if the number is positive
+--Returns Right Parser Int on successful parse holding the parsed integer and the rest of the input: String -> (Int, String)
+--Returns Left String with error message on failure
 intLiteral :: Parser Int
 intLiteral = parseChar '-' *> fmap negate nonNegativeLiteral <|> nonNegativeLiteral
 
+--This parses and a non negative integer
+--Returns Right Parser Int on successful parse holding the parsed integer and the rest of the input: String -> (Int, String)
+--Returns Left String with error message on failure
 nonNegativeLiteral :: Parser Int
 nonNegativeLiteral = read <$> spanParserSome isDigit
 
+--This parses all alphabetic characters, digits and spaces
+--Returns Right Parser String on successful parse holding the parsed string and the rest of the input: String -> (String, String)
+--Returns Left String with error message on failure
 stringLiteral :: Parser String
 stringLiteral = spanParserSome isAlphaNumSpace
 
+--This parses a DNull value if the input string starts with "null\n"
+--Returns Right Parser Document on successful parse holding the parsed DNull value and the rest of the input: String -> (Document, String)
+--Returns Left String with error message on failure
 parseDNull :: Parser Document
 parseDNull = Parser $ \input -> do
   let result = runParser (parseStr "null\n") input in
@@ -185,12 +194,21 @@ parseDNull = Parser $ \input -> do
       Left a -> Left a
       _ -> Right (DNull, drop 5 input)
 
+--This parses a DInteger value if the input string starts with any spaces followed by an intLiteral
+--Returns Right Parser Document on successful parse holding the parsed DInteger value and the rest of the input: String -> (Document, String)
+--Returns Left String with error message on failure
 parseDInteger :: Parser Document
 parseDInteger = DInteger <$> (optional (spanParserMany isSpace) *> intLiteral <* parseChar '\n')
 
+--This parses a DString value if the input string starts with any spaces followed by single or double quotes and a stringLiteral and ending on quotes
+--Returns Right Parser Document on successful parse holding the parsed DString value and the rest of the input: String -> (Document, String)
+--Returns Left String with error message on failure
 parseDString :: Parser Document
 parseDString = DString <$> (optional (spanParserMany isSpace) *> optional (parseChar '"') *> optional (parseChar '\'') *> stringLiteral <* optional (parseChar '\'') <* optional (parseChar '"') <* parseChar '\n')
 
+--This parses a DMap value recursively if the input string starts with spaces equal to passed Int * 2
+--Returns Right Parser Document on successful parse holding the parsed DMap value and the rest of the input: String -> (Document, String)
+--Returns Left String with error message on failure
 parseDMap :: Int -> Parser Document
 parseDMap prevIndent = Parser $ \input ->
   let indentation = (countSpaces input `div` 2) in
@@ -198,25 +216,36 @@ parseDMap prevIndent = Parser $ \input ->
     else if prevIndent < indentation then runParser (parseDocument' prevIndent) input
     else Left "errorDMAP"
 
+--This parses a DMap value recursively if the input string starts with spaces equal to passed Int * 2, DMap key followed by a Document type
+--Returns Right Parser (String, Document) on successful parse holding the parsed DMap key and value as a touple and the rest of the input: String -> ((String, Document), String)
+--Returns Left String with error message on failure
 parsePair :: Int -> Parser (String, Document)
 parsePair prevIndent = Parser $ \input ->
   let indentation = (countSpaces input `div` 2) in
     if prevIndent == indentation then runParser ((,) <$> (optional (parseChar '\n') *> removeSpaces prevIndent *> optional (parseChar '"') *> optional (parseChar '\'') *> stringLiteral <* optional (parseChar '\'') <* optional (parseChar '"')) <*> (parseChar ':' *> optional(parseChar ' ') *> optional (parseChar '\n') *> parseDocumentInDMap prevIndent)) input
     else Left "errorDPAIR"
 
+--This parses a DList value recursively if the input string starts with spaces equal to passed Int * 2 followed by "- "
+--Returns Right Parser Document on successful parse holding the parsed DList value and the rest of the input: String -> (Document, String)
+--Returns Left String with error message on failure
 parseDList :: Int -> Parser Document
 parseDList prevIndent = Parser $ \input ->
   let indentation = countSpaces input `div` 2 in
     if prevIndent == indentation then runParser (DList <$> some ( optional (parseChar '\n') *> removeSpaces prevIndent *> parseStr "- " *> addSpaces (prevIndent+1) *> parseListItem prevIndent)) input
---    else if prevIndent < indentation then runParser (parseDocument' prevIndent) input
     else Left "errorDLIST"
 
+--This parses a DList value recursively if the input string starts with spaces equal to passed Int * 2
+--Returns Right Parser Document on successful parse holding the parsed DList value and the rest of the input: String -> (Document, String)
+--Returns Left String with error message on failure
 parseListItem :: Int -> Parser Document
 parseListItem prevIndent = Parser $ \input ->
   let indentation = countSpaces input `div` 2 - 1 in
     if prevIndent == indentation then runParser ( optional (parseChar '\n') *> parseDocumentInList prevIndent) input
     else Left "errorDLISTITEM"
 
+--This parses an empty DList if the input string starts with n spaces followed by "[]\n"
+--Returns Right Parser Document on successful parse holding an empty DList and the rest of the input: String -> (Document, String)
+--Returns Left String with error message on failure
 parseEmptyDList :: Parser Document
 parseEmptyDList = Parser $ \input ->
   let result = runParser (spanParserMany isSpace *> parseStr "[]" <* parseChar '\n') input in
@@ -224,6 +253,9 @@ parseEmptyDList = Parser $ \input ->
       Left a -> Left a
       _ -> Right (DList [], drop 3 (dropWhile isSpace input))
 
+--This parses an empty DMap if the input string starts with n spaces followed by "{}\n"
+--Returns Right Parser Document on successful parse holding an empty DMap and the rest of the input: String -> (Document, String)
+--Returns Left String with error message on failure 
 parseEmptyDMap :: Parser Document
 parseEmptyDMap = Parser $ \input ->
   let result = runParser (spanParserMany isSpace *> parseStr "{}" <* parseChar '\n') input in
@@ -231,6 +263,9 @@ parseEmptyDMap = Parser $ \input ->
       Left a -> Left a
       _ -> Right (DMap [], drop 3 (dropWhile isSpace input))
 
+--This parses an empty DString if the input string starts with n spaces followed by "\"\"\n"
+--Returns Right Parser Document on successful parse holding an empty DString and the rest of the input: String -> (Document, String)
+--Returns Left String with error message on failure
 parseEmptyDStringDoubleQuotes :: Parser Document
 parseEmptyDStringDoubleQuotes = Parser $ \input ->
   let result = runParser (spanParserMany isSpace *> parseStr "\"\"" <* parseChar '\n') input in
@@ -238,6 +273,9 @@ parseEmptyDStringDoubleQuotes = Parser $ \input ->
       Left a -> Left a
       _ -> Right (DString "", drop 3 (dropWhile isSpace input))
 
+--This parses an empty DString if the input string starts with n spaces followed by "''\n"
+--Returns Right Parser Document on successful parse holding an empty DString and the rest of the input: String -> (Document, String)
+--Returns Left String with error message on failure
 parseEmptyDStringSingleQuotes :: Parser Document
 parseEmptyDStringSingleQuotes = Parser $ \input ->
   let result = runParser (spanParserMany isSpace *> parseStr "''" <* parseChar '\n') input in
@@ -245,33 +283,54 @@ parseEmptyDStringSingleQuotes = Parser $ \input ->
       Left a -> Left a
       _ -> Right (DString "", drop 3 (dropWhile isSpace input))
 
+--This recursively parses a document if the input string starts with n spaces followed by a Document type value
+--Returns Right Parser Document on successful parse holding the parsed Document value and the rest of the input: String -> (Document, String)
+--Returns Left String with error message on failure
 parseDocument' :: Int -> Parser Document
 parseDocument' prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDStringDoubleQuotes <|> parseEmptyDStringSingleQuotes <|> parseEmptyDMap <|> parseEmptyDList <|> parseDList  prevIndent <|> parseDMap prevIndent  <|> parseDString
 
+--This recursively parses a document if the input string starts with n spaces followed by a Document type value
+--Returns Right Parser Document on successful parse holding the parsed Document value and the rest of the input: String -> (Document, String)
+--Returns Left String with error message on failure
 parseDocumentInList :: Int -> Parser Document
 parseDocumentInList prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDStringDoubleQuotes <|> parseEmptyDStringSingleQuotes <|> parseEmptyDMap <|> parseEmptyDList <|> parseDList (prevIndent+1) <|> parseDMap (prevIndent+1) <|> parseDString
 
+--This recursively parses a document if the input string starts with n spaces followed by a Document type value
+--Returns Right Parser Document on successful parse holding the parsed Document value and the rest of the input: String -> (Document, String)
+--Returns Left String with error message on failure
 parseDocumentInDMap :: Int -> Parser Document
 parseDocumentInDMap prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDStringDoubleQuotes <|> parseEmptyDStringSingleQuotes <|> parseEmptyDMap <|> parseEmptyDList <|> parseDList prevIndent <|> parseDMap (prevIndent+1) <|> parseDString
 
 -- HELPER FUNCTIONS
 
+--This checks if the given character is an alphabetic character, a digit or a space
 isAlphaNumSpace :: Char -> Bool
 isAlphaNumSpace c = isAlphaNum c || c == ' '
 
+--This removes n spaces from the beginning of the input string
+--Returns Right Parser String the removed spaces and the rest of the input string: String -> (String, String)
+--Returns Left String with error message on failure
 removeSpaces :: Int -> Parser String
 removeSpaces n = Parser $ \input ->
   let indentation = countSpaces input `div` 2 in
     if n <= indentation then Right ("", drop (n*2) input)
     else Left "error"
 
+--This adds n spaces to the beginning of the input string
+--Returns Right Parser String holding an empty character and spaces with input string: String -> (String, String)
+--Returns Left String with error message on failure
 addSpaces :: Int -> Parser String
 addSpaces n = Parser $ \input -> addSpace input n
 
+--This recursively adds two spaces to the beginning of the input string
+--Returns Right (String, String) holding an empty character and spaces with input string
+--Returns Left String with error message on failure
 addSpace :: String -> Int -> Either String (String, String)
 addSpace acc 0 = Right ("", acc)
 addSpace acc n = addSpace ("  " ++ acc) (n-1)
 
+--This counts the number of spaces at the beginning of the input string
+--Returns the number of spaces
 countSpaces :: String -> Int
 countSpaces str =
   let (a, _) = span isSpaceOrNewLine str in
@@ -282,15 +341,6 @@ countSpaces str =
         then length a - 1
       else length a
 
+--This checks if the given character is a space or a new line
 isSpaceOrNewLine :: Char -> Bool
 isSpaceOrNewLine c = isSpace c || c == '\n'
-
-removeStartingDashes :: String -> String
-removeStartingDashes str =
-  let (a, b) = span (== '-') str in
-    if null a
-      then str
-    else
-      if head b == '\n'
-        then drop 1 b
-    else str
