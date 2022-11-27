@@ -36,13 +36,12 @@ instance Alternative Parser where
 -- Parses a document from yaml
 parseDocument :: String -> Either String Document
 parseDocument yaml = do
-    let input = removeStartingDashes yaml
-    (a,b) <- runParser (parseDocument' 0) input
+    (a,b) <- runParser (parseDocument' 0) yaml
     case (a,b) of
       (DNull, "") -> Right DNull
       (DNull, _) -> Left "error"
       (doc, "") -> Right doc
-      (doc, _) -> Left "error"
+      (doc, b) -> Left (show doc ++ "||||||||||||||||||||||||||||||||||||" ++ b)
 
 
 -- This adds game data to initial state
@@ -163,16 +162,16 @@ stringLiteral = spanParserSome isAlphaNumSpace
 
 parseDNull :: Parser Document
 parseDNull = Parser $ \input -> do
-  let result = runParser (parseStr "null") input in
+  let result = runParser (parseStr "null\n") input in
     case result of
       Left a -> Left a
-      _ -> Right (DNull, drop 4 input)
+      _ -> Right (DNull, drop 5 input)
 
 parseDInteger :: Parser Document
-parseDInteger = DInteger <$> (optional (spanParserMany isSpace) *> intLiteral)
+parseDInteger = DInteger <$> (optional (spanParserMany isSpace) *> intLiteral <* parseChar '\n')
 
 parseDString :: Parser Document
-parseDString = DString <$> (optional (spanParserMany isSpace) *> optional (parseChar '"') *> optional (parseChar '\'') *> stringLiteral <* optional (parseChar '\'') <* optional (parseChar '"') <* optional (parseChar '\n'))
+parseDString = DString <$> (optional (spanParserMany isSpace) *> optional (parseChar '"') *> optional (parseChar '\'') *> stringLiteral <* optional (parseChar '\'') <* optional (parseChar '"') <* parseChar '\n')
 
 parseDMap :: Int -> Parser Document
 parseDMap prevIndent = Parser $ \input ->
@@ -184,7 +183,7 @@ parseDMap prevIndent = Parser $ \input ->
 parsePair :: Int -> Parser (String, Document)
 parsePair prevIndent = Parser $ \input ->
   let indentation = (countSpaces input `div` 2) in
-    if prevIndent == indentation then runParser ((,) <$> (optional (parseChar '\n') *> removeSpaces prevIndent *> stringLiteral) <*> (parseChar ':' *> optional(parseChar ' ') *> optional (parseChar '\n') *> parseDocumentInDMap prevIndent)) input
+    if prevIndent == indentation then runParser ((,) <$> (optional (parseChar '\n') *> removeSpaces prevIndent *> optional (parseChar '"') *> optional (parseChar '\'') *> stringLiteral <* optional (parseChar '\'') <* optional (parseChar '"')) <*> (parseChar ':' *> optional(parseChar ' ') *> optional (parseChar '\n') *> parseDocumentInDMap prevIndent)) input
     else Left "errorDPAIR"
 
 parseDList :: Int -> Parser Document
@@ -202,31 +201,31 @@ parseListItem prevIndent = Parser $ \input ->
 
 parseEmptyDList :: Parser Document
 parseEmptyDList = Parser $ \input ->
-  let result = runParser (spanParserMany isSpace *> parseStr "[]") input in
+  let result = runParser (spanParserMany isSpace *> parseStr "[]" <* parseChar '\n') input in
     case result of
       Left a -> Left a
-      _ -> Right (DList [], drop 2 (dropWhile isSpace input))
+      _ -> Right (DList [], drop 3 (dropWhile isSpace input))
 
 parseEmptyDMap :: Parser Document
 parseEmptyDMap = Parser $ \input ->
-  let result = runParser (spanParserMany isSpace *> parseStr "{}") input in
+  let result = runParser (spanParserMany isSpace *> parseStr "{}" <* parseChar '\n') input in
     case result of
       Left a -> Left a
-      _ -> Right (DMap [], drop 2 (dropWhile isSpace input))
+      _ -> Right (DMap [], drop 3 (dropWhile isSpace input))
 
 parseEmptyDStringDoubleQuotes :: Parser Document
 parseEmptyDStringDoubleQuotes = Parser $ \input ->
-  let result = runParser (spanParserMany isSpace *> parseStr "\"\"") input in
+  let result = runParser (spanParserMany isSpace *> parseStr "\"\"" <* parseChar '\n') input in
     case result of
       Left a -> Left a
-      _ -> Right (DString "", drop 2 (dropWhile isSpace input))
+      _ -> Right (DString "", drop 3 (dropWhile isSpace input))
 
 parseEmptyDStringSingleQuotes :: Parser Document
 parseEmptyDStringSingleQuotes = Parser $ \input ->
-  let result = runParser (spanParserMany isSpace *> parseStr "''") input in
+  let result = runParser (spanParserMany isSpace *> parseStr "''" <* parseChar '\n') input in
     case result of
       Left a -> Left a
-      _ -> Right (DString "", drop 2 (dropWhile isSpace input))
+      _ -> Right (DString "", drop 3 (dropWhile isSpace input))
 
 parseDocument' :: Int -> Parser Document
 parseDocument' prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDStringDoubleQuotes <|> parseEmptyDStringSingleQuotes <|> parseEmptyDMap <|> parseEmptyDList <|> parseDList  prevIndent <|> parseDMap prevIndent  <|> parseDString
