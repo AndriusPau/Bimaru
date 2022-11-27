@@ -209,9 +209,9 @@ docToString :: Document -> String -> String -> Int -> String
 
 docToString DNull acc spaces nest = acc ++ "null"
 
-docToString (DInteger x) acc spaces nest = acc ++ (show x)
+docToString (DInteger x) acc spaces nest = acc ++ show x
 
-docToString (DString x) acc spaces nest = acc ++ x
+docToString (DString x) acc spaces nest = acc ++ show x
 
 docToString (DList(DMap x: xs)) acc spaces nest =
   docToString' (DList xs) (docToString (DMap x) (acc ++ (printSpaces nest acc) ++ "- ") (spaces ++ "  ") (nest + 1)) (spaces ++ "") nest
@@ -243,9 +243,9 @@ docToString' :: Document -> String -> String -> Int -> String
 
 docToString' DNull acc spaces nest = acc ++ "null"
 
-docToString' (DInteger x) acc spaces nest = acc ++ (show x)
+docToString' (DInteger x) acc spaces nest = acc ++ show x
 
-docToString' (DString x) acc spaces nest = acc ++ x
+docToString' (DString x) acc spaces nest = acc ++ show x
 
 docToString' (DList (DMap x : xs)) acc spaces nest =
   docToString (DList(DMap x: xs)) (acc ++ "\n") spaces nest
