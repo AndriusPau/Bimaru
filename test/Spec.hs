@@ -66,37 +66,59 @@ fromYamlTests = testGroup "Document from yaml"
 toYamlTests :: TestTree
 toYamlTests = testGroup "Document to yaml"
   [   testCase "Null" $
-        renderDocument DNull @?= "null"
+        renderDocument DNull @?= "---\nnull"
 
     , testCase "Int" $
-        renderDocument (DInteger 789123) @?= "789123"
+        renderDocument (DInteger 789123) @?= "---\n789123"
     , testCase "String" $
-        renderDocument (DString "Test123") @?= "Test123"
+        renderDocument (DString "Test123") @?= "---\nTest123"
 
 
     , testCase "Empty List" $
-        renderDocument (DList []) @?= "[]"
-    , testCase "List of ints" $
-        renderDocument (DList [DInteger 1, DInteger 2, DInteger 3, DInteger 4, DInteger 5, DInteger 6, DInteger 7, DInteger 111]) @?= "[1, 2, 3, 4, 5, 6, 7, 111]"
-    , testCase "List of nulls" $
-        renderDocument (DList [DNull, DNull, DNull]) @?= "[null, null, null]"
-    , testCase "List of strings" $
-        renderDocument (DList [DString "Hello", DString "World", DString "!!"]) @?= "[Hello, World, !!]"
+        renderDocument (DList []) @?= "---\n[]"
+    , testCase "List of Dints" $
+        renderDocument (DList [DInteger 1, DInteger 2, DInteger 3, DInteger 4, DInteger 5, DInteger 6, DInteger 7, DInteger 111]) @?= listOfDInts
+    , testCase "List of Dnulls" $
+        renderDocument (DList [DNull, DNull, DNull]) @?= listOfDNulls
+    , testCase "List of Dstrings" $
+        renderDocument (DList [DString "Hello", DString "World", DString "!!"]) @?= listOfDStrings
     , testCase "List of DMaps" $
-        renderDocument (DList[DMap[("1.1", DInteger 1), ("1.2", DInteger 2)], DMap[("2.1", DInteger 1)], DMap[("3.1", DInteger 1), ("3.2", DInteger 2)]]) @?= "[{1.1: 1, 1.2: 2}, {2.1: 1}, {3.1: 1, 3.2: 2}]"
+        renderDocument (DList[DMap[("1.1", DInteger 1), ("1.2", DInteger 2)], DMap[("2.1", DInteger 1)], DMap[("3.1", DInteger 1), ("3.2", DInteger 2)]]) @?= listOfDMaps
+    , testCase "List of DMaps2" $
+        renderDocument (DList[DMap[("1.0", DInteger 1), ("1.2DMap", DMap[("1.2.4", DMap[("2.1.6", DMap[])])])], DMap[("2.0", DInteger 1)], DMap[("3.0", DInteger 1), ("3.2", DInteger 2)]]) @?= listOfDMaps2
 
     , testCase "Empty DMap" $
-        renderDocument (DMap[]) @?= "{}"
+        renderDocument (DMap[]) @?= "---\n{}"y
     , testCase "DMap with one element" $
-        renderDocument (DMap[("DNull", DNull)]) @?= "{DNull: null}"
+        renderDocument (DMap[("DNull", DNull)]) @?= "---\nDNull: null"
     , testCase "DMap with list of ints inside" $
-        renderDocument (DMap [("List", DList[DInteger 1, DInteger 2, DInteger 3, DInteger 4])]) @?= "{List: [1, 2, 3, 4]}"
+        renderDocument (DMap [("List", DList[DInteger 1, DInteger 2, DInteger 3, DInteger 4])]) @?= "---\nList:\n- 1\n- 2\n- 3\n- 4"
     , testCase "DMap with a DMap which has a DMap inside" $
-        renderDocument (DMap[("first", DMap[("second", DMap[("third", DString "The end")])])]) @?= "{first: {second: {third: The end}}}"
+        renderDocument (DMap[("first", DMap[("second", DMap[("third", DString "The end")])])]) @?= "---\nfirst:\n  second:\n    third: The end"
+    , testCase "DMap with a DMap which has a DMap with a List inside" $
+        renderDocument (DMap[("first", DMap[("second", DMap[("List", DList[DInteger 1, DInteger 2, DList[]])])])]) @?= "---\nfirst:\n  second:\n    List:\n    - 1\n    - 2\n    - []"
+    , testCase "DMap with a DMap which has a DMap with a List inside" $
+        renderDocument (DMap[("first", DMap[("second", DMap[("third", DList[DInteger 1, DInteger 2])])])]) @?= "---\nfirst:\n  second:\n    third:\n    - 1\n    - 2"
+
     -- IMPLEMENT more test cases:
     -- * other primitive types/values
     -- * nested types
   ]
+
+listOfDInts :: String
+listOfDInts = "---\n- 1\n- 2\n- 3\n- 4\n- 5\n- 6\n- 7\n- 111"
+
+listOfDNulls :: String
+listOfDNulls = "---\n- null\n- null\n- null"
+
+listOfDStrings :: String
+listOfDStrings = "---\n- Hello\n- World\n- !!"
+
+listOfDMaps :: String
+listOfDMaps = "---\n- 1.1: 1\n  1.2: 2\n- 2.1: 1\n- 3.1: 1\n  3.2: 2"
+
+listOfDMaps2 :: String
+listOfDMaps2 = "---\n- 1.0: 1\n  1.2DMap:\n    1.2.4:\n      2.1.6: {}\n- 2.0: 1\n- 3.0: 1\n  3.2: 2"
     
 gameStartTests :: TestTree
 gameStartTests = testGroup "Test start document"
