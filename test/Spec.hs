@@ -38,11 +38,16 @@ dogfood = testGroup "Eating your own dogfood"
 
 fromYamlTests :: TestTree
 fromYamlTests = testGroup "Document from yaml"
-  [   testCase "null" $
+  [   testCase "Null value" $
         parseDocument "null" @?= Right DNull
-    -- IMPLEMENT more test cases:
-    -- * other primitive types/values
-    -- * nested types
+    ,  testCase "String without quotes" $
+        parseDocument "ThisIsAString" @?= Right (DString "ThisIsAString")
+    ,  testCase "String with quotes" $
+        parseDocument "\"This is a string\"" @?= Right (DString "This is a string")
+    ,  testCase "Positive integer" $
+        parseDocument "123" @?= Right (DInteger 123)
+    ,  testCase "Negative integer" $
+        parseDocument "-123" @?= Right (DInteger (-123))
   ]
 
 toYamlTests :: TestTree

@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module Lib3(hint, gameStart, parseDocument', GameStart, Hint
+module Lib3(hint, gameStart, parseDocument, GameStart, Hint
     ) where
 
 import Types ( Document(..), GameStart(..), Hint(..))
@@ -9,27 +9,40 @@ import Control.Applicative
 import Data.Char
 
 
-{-
+newtype Parser a = Parser
+  { runParser :: String -> Either String (a, String)
+  }
 
-DList
-parseDocument "" gives DMap[] or DList[]
-String with no char after it gives wrong doc
+instance Functor Parser where
+  fmap f (Parser p) = Parser $ \input -> do
+    (x, rest) <- p input
+    return (f x, rest)
 
-runParser (parseDocumentWID 0) "- labas\n- pasauli\n- - key1:\n      key11: 11"
+instance Applicative Parser where
+  pure x = Parser $ \input -> Right (x, input)
+  (Parser p1) <*> (Parser p2) = Parser $ \input -> do
+    (f, rest) <- p1 input
+    (a, rest') <- p2 rest
+    Right $ (f a, rest')
 
-
--}
+instance Alternative Parser where
+  empty = Parser $ const $ Left "empty"
+  (Parser p1) <|> (Parser p2) = Parser $ \input ->
+    case p1 input of
+      Left _ -> p2 input
+      x      -> x
 
 -- IMPLEMENT
 -- Parses a document from yaml
 parseDocument :: String -> Either String Document
 parseDocument yaml = do
-  (a,b) <- runParser (parseDocumentWID 0) yaml
-  case (a,b) of
-    (DNull, "") -> Right DNull
-    (DNull, _) -> Left "Incorrect yaml"
-    (doc, "") -> Right doc
-    (doc, _) -> Right doc
+    let input = removeStartingDashes yaml
+    (a,b) <- runParser (parseDocument' 0) input
+    case (a,b) of
+      (DNull, "") -> Right DNull
+      (DNull, _) -> Left "Incorrect yaml"
+      (doc, "") -> Right doc
+      (doc, _) -> Right doc
 
 
 -- This adds game data to initial state
@@ -101,31 +114,6 @@ getHintsString (x : xs) str rez
 getHintsString _ _ _ = ""
 
 
-
-
-newtype Parser a = Parser
-  { runParser :: String -> Either String (a, String)
-  }
-
-instance Functor Parser where
-  fmap f (Parser p) = Parser $ \input -> do
-    (x, rest) <- p input
-    return (f x, rest)
-
-instance Applicative Parser where
-  pure x = Parser $ \input -> Right (x, input)
-  (Parser p1) <*> (Parser p2) = Parser $ \input -> do
-    (f, rest) <- p1 input
-    (a, rest') <- p2 rest
-    Right (f a, rest')
-
-instance Alternative Parser where
-  empty = Parser $ const $ Left "empty"
-  (Parser p1) <|> (Parser p2) = Parser $ \input ->
-    case p1 input of
-      Left _ -> p2 input
-      x      -> x
-
 parseChar :: Char -> Parser Char
 parseChar c = Parser $ \input ->
   case input of
@@ -153,7 +141,7 @@ parseIf f =
       y:ys
         | f y       -> Right (y, ys)
         | otherwise -> Left $ "Expected a character, but got '" ++ [y] ++ "'"
-      [] -> Left "Expected a character, but reached end of string"
+      [] -> Left $ "Expected a character, but reached end of string"
 
 parseIf' :: (Char -> Bool) -> Parser Char
 parseIf' f =
@@ -162,7 +150,7 @@ parseIf' f =
       y:ys
         | f y       -> Right (' ', y:ys)
         | otherwise -> Left $ "Expected a character, but got '" ++ [y] ++ "'"
-      [] -> Left "Expected a character, but reached end of string"
+      [] -> Left $ "Expected a character, but reached end of string"
 
 intLiteral :: Parser Int
 intLiteral = parseChar '-' *> fmap negate nonNegativeLiteral <|> nonNegativeLiteral
@@ -171,7 +159,7 @@ nonNegativeLiteral :: Parser Int
 nonNegativeLiteral = read <$> spanParserSome isDigit
 
 stringLiteral :: Parser String
-stringLiteral = spanParserSome isAlphaNum
+stringLiteral = spanParserSome isAlphaNumSpace
 
 parseDNull :: Parser Document
 parseDNull = Parser $ \input -> do
@@ -181,42 +169,35 @@ parseDNull = Parser $ \input -> do
       _ -> Right (DNull, drop 4 input)
 
 parseDInteger :: Parser Document
-parseDInteger = DInteger <$> intLiteral
+parseDInteger = DInteger <$> (optional (spanParserMany isSpace) *> intLiteral)
 
 parseDString :: Parser Document
-parseDString = DString <$> ( optional (parseChar '"') *> stringLiteral <* parseIf' (/= ':') <* optional (parseChar '"'))
+parseDString = DString <$> (optional (spanParserMany isSpace) *> optional (parseChar '"') *> stringLiteral <* optional (parseChar '"'))
 
 parseDMap :: Int -> Parser Document
-parseDMap depth = Parser $ \input ->
+parseDMap prevIndent = Parser $ \input ->
   let indentation = (countSpaces input `div` 2) in
-  if depth >= indentation then runParser ( DMap <$> some (parsePair depth)) input
-    else if depth < indentation then runParser (parseDocument' depth) input
+  if prevIndent == indentation then runParser ( DMap <$> some (parsePair prevIndent)) input
+    else if prevIndent < indentation then runParser (parseDocument' prevIndent) input
     else Left "errorDMAP"
 
 parsePair :: Int -> Parser (String, Document)
-parsePair depth = Parser $ \input ->
+parsePair prevIndent = Parser $ \input ->
   let indentation = (countSpaces input `div` 2) in
-    if depth == indentation then runParser ((,) <$> (spanParserMany isSpace *> stringLiteral) <*> (parseChar ':' *> optional(parseChar ' ') *> optional (parseChar '\n') *> parseDocumentWID depth)) input
+    if prevIndent == indentation then runParser ((,) <$> (optional (parseChar '\n') *> removeSpaces prevIndent *> stringLiteral) <*> (parseChar ':' *> optional(parseChar ' ') *> optional (parseChar '\n') *> parseDocumentInDMap prevIndent)) input
     else Left "errorDPAIR"
 
-parseEmptyDMap :: Parser Document
-parseEmptyDMap = Parser $ \input ->
-  let result = runParser (parseStr "{}") input in
-    case result of
-      Left a -> Left a
-      _ -> Right (DMap [], drop 2 input)
-
 parseDList :: Int -> Parser Document
-parseDList depth = Parser $ \input ->
-  let indentation = countSpacesAndDashes input `div` 2 - 1 in
-    if depth == indentation then runParser (DList <$> some (parseListItem depth)) input
-    else if depth < indentation then runParser (parseDocument' depth) input
+parseDList prevIndent = Parser $ \input ->
+  let indentation = countSpaces input `div` 2 in
+    if prevIndent == indentation then runParser (DList <$> some ( optional (parseChar '\n') *> removeSpaces prevIndent *> parseStr "- " *> addSpaces (prevIndent+1) *> parseListItem prevIndent)) input
+--    else if prevIndent < indentation then runParser (parseDocument' prevIndent) input
     else Left "errorDLIST"
 
 parseListItem :: Int -> Parser Document
-parseListItem depth = Parser $ \input ->
-  let indentation = countSpacesAndDashes input `div` 2 - 1 in
-    if depth == indentation then runParser ( optional (parseChar '\n') *> optional (spanParserMany isSpace) *> some (parseStr "- ") *> parseDocumentWID depth) input
+parseListItem prevIndent = Parser $ \input ->
+  let indentation = countSpaces input `div` 2 - 1 in
+    if prevIndent == indentation then runParser ( optional (parseChar '\n') *> parseDocumentInList prevIndent) input
     else Left "errorDLISTITEM"
 
 parseEmptyDList :: Parser Document
@@ -226,57 +207,43 @@ parseEmptyDList = Parser $ \input ->
       Left a -> Left a
       _ -> Right (DList [], drop 2 input)
 
-{-
+parseEmptyDMap :: Parser Document
+parseEmptyDMap = Parser $ \input ->
+  let result = runParser (parseStr "{}") input in
+    case result of
+      Left a -> Left a
+      _ -> Right (DMap [], drop 2 input)
 
-"
-coords:
-- col:
-  - row: 6
+parseDocument' :: Int -> Parser Document
+parseDocument' prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDMap <|> parseEmptyDList <|> parseDList  prevIndent <|> parseDMap prevIndent  <|> parseDString
 
-"coords:\n- col:\n  - row: 6"
+parseDocumentInList :: Int -> Parser Document
+parseDocumentInList prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDMap <|> parseEmptyDList <|> parseDList (prevIndent+1) <|> parseDMap (prevIndent+1) <|> parseDString
 
-DMap [("coords",DList [DMap [("col",DList [DMap [("row",DInteger 6)]])]])]
+parseDocumentInDMap :: Int -> Parser Document
+parseDocumentInDMap prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDMap <|> parseEmptyDList <|> parseDList prevIndent <|> parseDMap (prevIndent+1) <|> parseDString
 
-- col: 1
-  row: 9
-"
+-- HELPER FUNCTIONS
 
-"coords:\n- col: 1\n  row: 6\n- col: 1\n  row: 9\n"
+isAlphaNumSpace :: Char -> Bool
+isAlphaNumSpace c = isAlphaNum c || isSpace c
 
-coords: 
-- row: 2
-- col1: 1
-- - col2: 2
+removeSpaces :: Int -> Parser String
+removeSpaces n = Parser $ \input ->
+  let indentation = countSpaces input `div` 2 in
+    if n <= indentation then Right ("", drop (n*2) input)
+    else Left "error"
 
-"coords:\n- row: 2\n- col1: 1\n- - col2: 2"
+addSpaces :: Int -> Parser String
+addSpaces n = Parser $ \input -> addSpace input n
 
-DMap[("coords",DList[DMap[("row",DInteger 2)],DMap[("col1",DInteger 1)],DList[DMap[("col2",DInteger 2)]]])]
-
-coords: 
-- row: 2
-  col1: 1
-- - col2: 2
-
-"coords:\n- row: 2\n  col1: 1\n- - col2: 2"
-
-DMap[("coords",DList[DMap[("row",DInteger 2),("col1",DInteger 1)],DList[DMap[("col2",DInteger 2)]]])]
-
-
-
-
--}
-
-countChars :: Parser Int
-countChars = length <$> spanParserMany isDashOrSpace
+addSpace :: String -> Int -> Either String (String, String)
+addSpace acc 0 = Right ("", acc)
+addSpace acc n = addSpace ("  " ++ acc) (n-1)
 
 countSpaces :: String -> Int
 countSpaces str =
-  let (a, b) = span isSpace str in
-    length a
-
-countSpacesAndDashes :: String -> Int
-countSpacesAndDashes str =
-  let (a, b) = span isDashOrSpace str in
+  let (a, b) = span isSpaceOrNewLine str in
     if null a
       then 0
     else
@@ -284,23 +251,15 @@ countSpacesAndDashes str =
         then length a - 1
       else length a
 
-isDashOrSpace :: Char -> Bool
-isDashOrSpace c = c == '-' || isSpace c || c == '\n'
+isSpaceOrNewLine :: Char -> Bool
+isSpaceOrNewLine c = isSpace c || c == '\n'
 
-
-parseDocument' :: Int -> Parser Document
-parseDocument' depth = parseDInteger <|> parseDNull <|> parseDString <|> parseEmptyDMap <|> parseEmptyDList {-<|> parseDList (depth + 1)-} <|> parseDMap (depth+1)
-
-parseDocumentWID :: Int -> Parser Document
-parseDocumentWID depth = parseDInteger <|> parseDNull <|> parseDString <|> parseEmptyDMap <|> parseEmptyDList {-<|> parseDList depth-} <|> parseDMap depth
-
--- parseDocument' :: Int -> Parser Document
--- parseDocument' depth = parseDInteger <|> parseDNull <|> parseDString <|> parseEmptyDMap <|> parseEmptyDList <|> parseDList (depth + 1) <|> parseDMap (depth+1)
-
--- parseDocumentWID :: Int -> Parser Document
--- parseDocumentWID depth = parseDInteger <|> parseDNull <|> parseDString <|> parseEmptyDMap <|> parseEmptyDList <|> parseDList depth <|> parseDMap depth
-
-
-parseDocumentInDMAP :: Int -> Parser Document
-parseDocumentInDMAP depth = parseDInteger <|> parseDNull <|> parseDString <|> parseEmptyDMap <|> parseEmptyDList <|> parseDList depth <|> parseDMap (depth+1)
-
+removeStartingDashes :: String -> String
+removeStartingDashes str =
+  let (a, b) = span (== '-') str in
+    if null a
+      then str
+    else
+      if head b == '\n'
+        then drop 1 b
+    else str
