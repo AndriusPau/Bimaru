@@ -172,7 +172,7 @@ parseDInteger :: Parser Document
 parseDInteger = DInteger <$> (optional (spanParserMany isSpace) *> intLiteral)
 
 parseDString :: Parser Document
-parseDString = DString <$> (optional (spanParserMany isSpace) *> optional (parseChar '"') *> stringLiteral <* optional (parseChar '"'))
+parseDString = DString <$> (optional (spanParserMany isSpace) *> optional (parseChar '"') *> stringLiteral <* optional (parseChar '\n') <* optional (parseChar '"'))
 
 parseDMap :: Int -> Parser Document
 parseDMap prevIndent = Parser $ \input ->
@@ -226,7 +226,7 @@ parseDocumentInDMap prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDMap
 -- HELPER FUNCTIONS
 
 isAlphaNumSpace :: Char -> Bool
-isAlphaNumSpace c = isAlphaNum c || isSpace c
+isAlphaNumSpace c = isAlphaNum c || c == ' '
 
 removeSpaces :: Int -> Parser String
 removeSpaces n = Parser $ \input ->
