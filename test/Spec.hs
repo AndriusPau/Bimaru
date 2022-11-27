@@ -2,7 +2,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck
 import Data.String.Conversions
-import Data.Yaml as Y ( encode )
+import Data.Yaml as Y ( encodeWith, defaultEncodeOptions, defaultFormatOptions, setWidth, setFormat)
 
 import Lib2 (renderDocument, gameStart, hint)
 import Lib3 (parseDocument)
@@ -22,11 +22,14 @@ main = defaultMain (testGroup "Tests"
 properties :: TestTree
 properties = testGroup "Properties" [golden, dogfood]
 
+friendlyEncode :: Document -> String
+friendlyEncode doc = cs (Y.encodeWith (setFormat (setWidth Nothing defaultFormatOptions) defaultEncodeOptions) doc)
+
 golden :: TestTree
 golden = testGroup "Handles foreign rendering"
   [
     testProperty "parseDocument (Data.Yaml.encode doc) == doc" $
-      \doc -> parseDocument (cs (Y.encode doc)) == Right doc
+      \doc -> parseDocument (friendlyEncode doc) == Right doc
   ]
 
 dogfood :: TestTree
@@ -38,26 +41,46 @@ dogfood = testGroup "Eating your own dogfood"
 
 fromYamlTests :: TestTree
 fromYamlTests = testGroup "Document from yaml"
-  [   testCase "null" $
-        parseDocument "null" @?= Right DNull
-    -- IMPLEMENT more test cases:
-    -- * other primitive types/values
-    -- * nested types
+
+  [   testCase "Null value" $
+        parseDocument "null\n" @?= Right DNull
+    ,  testCase "String without quotes" $
+        parseDocument "ThisIsAString\n" @?= Right (DString "ThisIsAString")
+    ,  testCase "String with quotes" $
+        parseDocument "\"This is a string\"\n" @?= Right (DString "This is a string")
+    ,  testCase "Positive integer" $
+        parseDocument "123\n" @?= Right (DInteger 123)
+    ,  testCase "Negative integer" $
+        parseDocument "-123\n" @?= Right (DInteger (-123))
+    ,  testCase "List of strings without quotes" $
+        parseDocument "- ThisIsAString\n- ThisIsAlsoAString\n- ThisIsNotANumber\n" @?= Right (DList [DString "ThisIsAString", DString "ThisIsAlsoAString", DString "ThisIsNotANumber"])
+    ,  testCase "List of strings with quotes" $
+        parseDocument "- \"This is a string\"\n- \"This is also a string\"\n- \"This is a list of chars\"\n" @?= Right (DList [DString "This is a string", DString "This is also a string", DString "This is a list of chars"])
+    ,  testCase "List of integers" $
+        parseDocument "- 123\n- -456\n- 789\n" @?= Right (DList [DInteger 123, DInteger (-456), DInteger 789])
+    ,  testCase "List of DMaps" $
+        parseDocument "- DMap1: 123\n  DMap2: 456\n- DMap1: 789\n  DMap2: 101112\n" @?= Right (DList [DMap [("DMap1", DInteger 123), ("DMap2", DInteger 456)], DMap [("DMap1", DInteger 789), ("DMap2", DInteger 101112)]])
+    ,  testCase "List of DMaps with DLists inside" $
+        parseDocument "- DMap1: 123\n  DMap2: 456\n  DMap3:\n  - 789\n  - 101112\n- DMap1: 131415\n  DMap2: 161718\n  DMap3:\n  - 192021\n  - 222324\n" @?= Right (DList [DMap [("DMap1", DInteger 123), ("DMap2", DInteger 456), ("DMap3", DList [DInteger 789, DInteger 101112])], DMap [("DMap1", DInteger 131415), ("DMap2", DInteger 161718), ("DMap3", DList [DInteger 192021, DInteger 222324])]])
+    ,  testCase "DMap with DLists inside" $
+        parseDocument "DMap1: 123\nDMap2: 456\nDMap3:\n- 789\n- 101112\n" @?= Right (DMap [("DMap1", DInteger 123), ("DMap2", DInteger 456), ("DMap3", DList [DInteger 789, DInteger 101112])])
   ]
 
 toYamlTests :: TestTree
 toYamlTests = testGroup "Document to yaml"
   [   testCase "Null" $
-        renderDocument DNull @?= "---\nnull"
+        renderDocument DNull @?= "null\n"
 
     , testCase "Int" $
-        renderDocument (DInteger 789123) @?= "---\n789123"
+        renderDocument (DInteger 789123) @?= "789123\n"
+    , testCase "negative Int" $
+        renderDocument (DInteger (-7)) @?= "-7\n"
     , testCase "String" $
-        renderDocument (DString "Test123") @?= "---\nTest123"
-
-
+        renderDocument (DString "Test123") @?= "\"Test123\"\n"
+    , testCase "Empty string" $
+        renderDocument (DString "") @?= "\"\"\n"   
     , testCase "Empty List" $
-        renderDocument (DList []) @?= "---\n[]"
+        renderDocument (DList []) @?= "[]\n"
     , testCase "List of Dints" $
         renderDocument (DList [DInteger 1, DInteger 2, DInteger 3, DInteger 4, DInteger 5, DInteger 6, DInteger 7, DInteger 111]) @?= listOfDInts
     , testCase "List of Dnulls" $
@@ -70,37 +93,33 @@ toYamlTests = testGroup "Document to yaml"
         renderDocument (DList[DMap[("1.0", DInteger 1), ("1.2DMap", DMap[("1.2.4", DMap[("2.1.6", DMap[])])])], DMap[("2.0", DInteger 1)], DMap[("3.0", DInteger 1), ("3.2", DInteger 2)]]) @?= listOfDMaps2
 
     , testCase "Empty DMap" $
-        renderDocument (DMap[]) @?= "---\n{}"y
+        renderDocument (DMap[]) @?= "{}\n"
     , testCase "DMap with one element" $
-        renderDocument (DMap[("DNull", DNull)]) @?= "---\nDNull: null"
+        renderDocument (DMap[("DNull", DNull)]) @?= "DNull: null\n"
     , testCase "DMap with list of ints inside" $
-        renderDocument (DMap [("List", DList[DInteger 1, DInteger 2, DInteger 3, DInteger 4])]) @?= "---\nList:\n- 1\n- 2\n- 3\n- 4"
+        renderDocument (DMap [("List", DList[DInteger 1, DInteger 2, DInteger 3, DInteger 4])]) @?= "List:\n- 1\n- 2\n- 3\n- 4\n"
     , testCase "DMap with a DMap which has a DMap inside" $
-        renderDocument (DMap[("first", DMap[("second", DMap[("third", DString "The end")])])]) @?= "---\nfirst:\n  second:\n    third: The end"
+    renderDocument (DMap[("first", DMap[("second", DMap[("third", DString "The end")])])]) @?= "first:\n  second:\n    third: \"The end\"\n"
     , testCase "DMap with a DMap which has a DMap with a List inside" $
-        renderDocument (DMap[("first", DMap[("second", DMap[("List", DList[DInteger 1, DInteger 2, DList[]])])])]) @?= "---\nfirst:\n  second:\n    List:\n    - 1\n    - 2\n    - []"
+        renderDocument (DMap[("first", DMap[("second", DMap[("List", DList[DInteger 1, DInteger 2, DList[]])])])]) @?= "first:\n  second:\n    List:\n    - 1\n    - 2\n    - []\n"
     , testCase "DMap with a DMap which has a DMap with a List inside" $
-        renderDocument (DMap[("first", DMap[("second", DMap[("third", DList[DInteger 1, DInteger 2])])])]) @?= "---\nfirst:\n  second:\n    third:\n    - 1\n    - 2"
-
-    -- IMPLEMENT more test cases:
-    -- * other primitive types/values
-    -- * nested types
+        renderDocument (DMap[("first", DMap[("second", DMap[("third", DList[DInteger 1, DInteger 2])])])]) @?= "first:\n  second:\n    third:\n    - 1\n    - 2\n"
   ]
 
 listOfDInts :: String
-listOfDInts = "---\n- 1\n- 2\n- 3\n- 4\n- 5\n- 6\n- 7\n- 111"
+listOfDInts = "- 1\n- 2\n- 3\n- 4\n- 5\n- 6\n- 7\n- 111\n"
 
 listOfDNulls :: String
-listOfDNulls = "---\n- null\n- null\n- null"
+listOfDNulls = "- null\n- null\n- null\n"
 
 listOfDStrings :: String
-listOfDStrings = "---\n- Hello\n- World\n- !!"
+listOfDStrings = "- \"Hello\"\n- \"World\"\n- \"!!\"\n"
 
 listOfDMaps :: String
-listOfDMaps = "---\n- 1.1: 1\n  1.2: 2\n- 2.1: 1\n- 3.1: 1\n  3.2: 2"
+listOfDMaps = "- 1.1: 1\n  1.2: 2\n- 2.1: 1\n- 3.1: 1\n  3.2: 2\n"
 
 listOfDMaps2 :: String
-listOfDMaps2 = "---\n- 1.0: 1\n  1.2DMap:\n    1.2.4:\n      2.1.6: {}\n- 2.0: 1\n- 3.0: 1\n  3.2: 2"
+listOfDMaps2 = "- 1.0: 1\n  1.2DMap:\n    1.2.4:\n      2.1.6: {}\n- 2.0: 1\n- 3.0: 1\n  3.2: 2\n"
     
 gameStartTests :: TestTree
 gameStartTests = testGroup "Test start document"
