@@ -230,6 +230,9 @@ docToString (DMap ((str, DMap []) : xs)) acc spaces nest =
 docToString (DMap ((str, DMap doc) : xs)) acc spaces nest =
   docToString' (DMap xs) (docToString (DMap doc) (acc ++ (printSpaces nest acc) ++ str ++ ":\n") spaces (nest + 1)) spaces nest
 
+docToString (DMap ((str, DList []) : xs)) acc spaces nest =
+  docToString' (DMap xs) (docToString (DList []) (acc ++ (printSpaces nest acc) ++ str ++ ": ") spaces (nest)) spaces nest
+
 docToString (DMap ((str, DList doc) : xs)) acc spaces nest =
   docToString' (DMap xs) (docToString (DList doc) (acc ++ (printSpaces nest acc) ++ str ++ ":\n") spaces (nest)) spaces nest
 
@@ -266,7 +269,7 @@ docToString' (DMap ((str, DMap doc) : xs)) acc spaces nest =
   docToString' (DMap xs) (docToString (DMap doc) (acc ++ (printSpaces nest acc) ++ str ++ ":\n") spaces (nest + 1)) spaces nest
 
 docToString' (DMap ((str, DList doc) : xs)) acc spaces nest =
-  docToString' (DMap xs) (docToString (DList doc) (acc ++ (printSpaces nest acc) ++ str ++ "- ") spaces (nest)) spaces nest
+  docToString' (DMap xs) (docToString (DList doc) (acc ++ (printSpaces nest acc) ++ str ++ ": ") spaces (nest)) spaces nest
 
 docToString' (DMap ((str, doc) : xs)) acc spaces nest =
   docToString' (DMap xs) (docToString doc (acc ++ (printSpaces nest acc) ++ str ++ ": ") spaces nest) spaces nest

@@ -3,10 +3,28 @@
 module Lib3(hint, gameStart, parseDocument, GameStart, Hint
     ) where
 
+import Data.String.Conversions
+
+import Data.Yaml as Y (encodeWith, defaultEncodeOptions, defaultFormatOptions, setWidth, setFormat)
+
+
 import Types ( Document(..), GameStart(..), Hint(..))
 import Lib1 (State(..), emptyState)
+import Lib2 (renderDocument)
 import Control.Applicative
 import Data.Char
+
+stringTest :: String
+stringTest = "l:\n  MYb:\n  - ' 4k'\n  - 'Hj '\n  - s: []\n    A:\n    - - - -3\n        - 'fi   '\n      - 'Y'\n      - {}\n      - ' t'\n    - 'u 71 '\n    - - 5\n    - - -5\n      - AuxxI:\n        - mTmMJ:\n          - 1\n          - V: -2\n            nntE: 4\n            D:\n            - []\n            - t\n            - -1\n            fc:\n            - rx:\n              - 3\n              Q: -2\n            - 5\n            - c4Vj\n            - '0 '\n          - 1\n          - 3\n          q:\n          - ''\n          - hFI: hq0\n            Xl:\n            - -2\n            - I\n            LGG:\n            - kKirH: 1\n              FTmSj:\n                njX: []\n                Df:\n                - {}\n                j:\n                - -5\n                - 1\n                - VfmD:\n                    HQE: 2\n                    aMA:\n                      hD:\n                        k:\n                          Fk: '71'\n                        lbY:\n                        - '79I5 '\n                        - 4\n                      Wre: 0\n                  Ta: 1\n                - uQ: -3\n                  r: []\n                  Js: {}\n                QDFD:\n                  Ou: 2\n                  s: 3\n                  cgSN: -1\n            JyyyN: {}\n          - 5\n          - r8\n      - 4 9u\nXk: []\nxTJE:\n  q: vns\n  ZvODt:\n  - oy: I\n    oS: 5\n  - IqpS:\n      xG: 0\n      M: []\n      ZFET:\n      - ayL: e  u\n        XGZu:\n          nq:\n            j: 'Ss F '\n            DnS: k5\n        QQz: 3\n      - ''\n      uqu:\n        XaecS: []\n        m:\n          oa:\n          - - {}\n          - 'w '\n          - -5\n          - []\n          fZf: 2\n          eR:\n          - - -3\n            - uA:\n                HWOU: 2\n                air: 0\n                P: -1\n              lpSG: -3\n          - Vop: Tb7j\n            qRSz:\n              EST: -3\n            abzD:\n            - - - - -4\n                - ''\n                - e: 2\n                  GURFO: l V\n                  Ouv: 1\n                - Bw:\n                  - -2\n                  - ''\n                  - 'H   '\n              - 3\n            - 'bP8 '\n            - {}\n            F: ' z'\n    GxSj: -2\n  WoY: -1\nYUYL: {}\n"
+
+stringTest' :: String
+stringTest' = "bDX:\n  IAGq: 1\n  SrmO: \"5\"\ngIzz: \"G  h6\"\niA- []\n"
+
+docTest :: String
+docTest = renderDocument (DMap [("bDX",DMap [("IAGq",DInteger 1),("SrmO",DString "5")]),("gIzz",DString "G  h6"),("iA",DList [])])
+
+friendlyEncode :: Document -> String
+friendlyEncode doc = cs (Y.encodeWith (setFormat (setWidth Nothing defaultFormatOptions) defaultEncodeOptions) doc)
 
 
 newtype Parser a = Parser
