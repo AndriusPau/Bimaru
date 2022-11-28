@@ -38,7 +38,8 @@ instance Alternative Parser where
 -- Returns Right Document on successful parse
 -- Returns Left String with error message on failure
 parseDocument :: String -> Either String Document
-parseDocument yaml = do
+parseDocument yaml = 
+  do
     case runParser (parseDocument' 0) yaml of
       Left err -> Left err
       Right (doc, rest) -> if null rest then Right doc else Left $ "parseDocument: not all input consumed; rest: " ++ rest
@@ -307,8 +308,7 @@ parseDocumentInDMap prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDStr
 
 --This checks if the given character is an alphabetic character, a digit or a space
 isAlphaNumSpace :: Char -> Bool
-isAlphaNumSpace c = isAlphaNum c || c == ' '
-
+isAlphaNumSpace c = isAlphaNum c || c == ' ' || c == '_' || c == '-'
 --This removes n spaces from the beginning of the input string
 --Returns Right Parser String the removed spaces and the rest of the input string: String -> (String, String)
 --Returns Left String with error message on failure
