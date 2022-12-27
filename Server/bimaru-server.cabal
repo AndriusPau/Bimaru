@@ -1,0 +1,87 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           bimaru-server
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/githubuser/bimaru-client#readme>
+homepage:       https://github.com/githubuser/bimaru-client#readme
+bug-reports:    https://github.com/githubuser/bimaru-client/issues
+author:         Author name here
+maintainer:     example@example.com
+copyright:      2022 Author name here
+license:        BSD3
+build-type:     Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/bimaru-client
+
+library
+  exposed-modules:
+      Main
+  other-modules:
+      Paths_bimaru_server
+  hs-source-dirs:
+      ./
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-depends:
+      QuickCheck
+    , aeson
+    , base >=4.7 && <5
+    , base64
+    , bytestring
+    , containers
+    , http-types
+    , lens
+    , process
+    , repline
+    , scientific
+    , split
+    , string-conversions
+    , text
+    , transformers
+    , unordered-containers
+    , vector
+    , wai
+    , warp
+    , wreq
+    , yaml
+  default-language: Haskell2010
+
+executable server
+  main-is: Main.hs
+  other-modules:
+      Paths_bimaru_server
+  hs-source-dirs:
+      ./
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      QuickCheck
+    , aeson
+    , base >=4.7 && <5
+    , base64
+    , bimaru-server
+    , bytestring
+    , containers
+    , http-types
+    , lens
+    , process
+    , repline
+    , scientific
+    , split
+    , string-conversions
+    , text
+    , transformers
+    , unordered-containers
+    , vector
+    , wai
+    , warp
+    , wreq
+    , yaml
+  default-language: Haskell2010
