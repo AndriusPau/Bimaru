@@ -41,6 +41,8 @@ dependencies:
 - wai
 - http-types
 - warp
+- network
+- async
 
 ghc-options:
 - -Wall

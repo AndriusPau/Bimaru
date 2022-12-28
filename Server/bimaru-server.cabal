@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -33,12 +33,14 @@ library
   build-depends:
       QuickCheck
     , aeson
+    , async
     , base >=4.7 && <5
     , base64
     , bytestring
     , containers
     , http-types
     , lens
+    , network
     , process
     , repline
     , scientific
@@ -64,6 +66,7 @@ executable server
   build-depends:
       QuickCheck
     , aeson
+    , async
     , base >=4.7 && <5
     , base64
     , bimaru-server
@@ -71,6 +74,7 @@ executable server
     , containers
     , http-types
     , lens
+    , network
     , process
     , repline
     , scientific
