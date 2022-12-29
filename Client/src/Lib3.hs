@@ -38,12 +38,12 @@ instance Alternative Parser where
 -- Returns Right Document on successful parse
 -- Returns Left String with error message on failure
 parseDocument :: String -> Either String Document
-parseDocument = Left
--- parseDocument yaml = 
---   do
---     case runParser (parseDocument' 0) yaml of
---       Left err -> Left err
---       Right (doc, rest) -> if null rest then Right doc else Left $ "parseDocument: not all input consumed; rest: " ++ rest
+-- parseDocument = Left . show
+parseDocument yaml = 
+  do
+    case runParser (parseDocument' 0) yaml of
+      Left err -> Left err
+      Right (doc, rest) -> if null rest then Right doc else Left $ "parseDocument: not all input consumed; rest: " ++ rest
 
 -- This adds game data to initial state
 -- Errors are not reported since GameStart is already totally valid adt

@@ -138,3 +138,8 @@ run token = do
   -- let fullUrl = T.unpack (T.concat ["http://", url, "/game/", token])
   let fullUrl = T.unpack (T.concat ["http://", "localhost:8080", "/game/", token])
   evalStateT (evalRepl (const $ pure "==> ") cmd [] Nothing Nothing (Word completer) ini final) (fullUrl, Lib1.emptyState)
+
+-- "game_setup_id: 3a7a8f44-b224-40ff-9c5c-58a1b60eab4b
+-- \nnumber_of_hints: 10
+-- \noccupied_rows:\n- 1\n- 1\n- 2\n- 3\n- 1\n- 4\n- 2\n- 4\n- 2\n- 0
+-- \noccupied_cols:\n- 2\n- 0\n- 2\n- 2\n- 2\n- 0\n- 6\n- 0\n- 3\n- 3\n"
