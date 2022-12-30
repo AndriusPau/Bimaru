@@ -89,13 +89,15 @@ parseDocument yaml =
 
 parseDocument' :: Int -> Parser Document
 --parseDocument' prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDStringDoubleQuotes <|> parseEmptyDStringSingleQuotes <|> parseEmptyDMap <|> parseEmptyDList
-parseDocument' prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDStringDoubleQuotes <|> parseEmptyDStringSingleQuotes <|> parseEmptyDMap <|> parseEmptyDList {-<|> parseDList  prevIndent-} <|> parseDMap prevIndent  <|> parseDString
+parseDocument' prevIndent = do
+  input <- Parser get
+  parseDInteger <|> parseDNull <|> parseEmptyDStringDoubleQuotes <|> parseEmptyDStringSingleQuotes <|> parseEmptyDMap <|> parseEmptyDList <|> parseDList  prevIndent <|> parseDMap prevIndent <|> parseDString
 
--- parseDocumentInList :: Int -> Parser Document
--- parseDocumentInList prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDStringDoubleQuotes <|> parseEmptyDStringSingleQuotes <|> parseEmptyDMap <|> parseEmptyDList {-<|> parseDList (prevIndent+1)-} <|> parseDMap (prevIndent+1) <|> parseDString
+parseDocumentInList :: Int -> Parser Document
+parseDocumentInList prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDStringDoubleQuotes <|> parseEmptyDStringSingleQuotes <|> parseEmptyDMap <|> parseEmptyDList <|> parseDList (prevIndent+1) <|> parseDMap (prevIndent+1) <|> parseDString
 
 parseDocumentInDMap :: Int -> Parser Document
-parseDocumentInDMap prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDStringDoubleQuotes <|> parseEmptyDStringSingleQuotes <|> parseEmptyDMap <|> parseEmptyDList {-<|> parseDList prevIndent-} <|> parseDMap (prevIndent+1) <|> parseDString
+parseDocumentInDMap prevIndent = parseDInteger <|> parseDNull <|> parseEmptyDStringDoubleQuotes <|> parseEmptyDStringSingleQuotes <|> parseEmptyDMap <|> parseEmptyDList <|> parseDList prevIndent <|> parseDMap (prevIndent+1) <|> parseDString
 
 
 -- parseDocument' :: Int -> Parser Document
@@ -143,7 +145,8 @@ spanParserSome f = Parser $ do
   str <- get
   let (xs, ys) = span f str
   if null xs
-  then throwError $ ParseError "No parsers matched"
+  then do
+    throwError $ ParseError "No parsers matched"
   else do
     put ys
     return xs
@@ -179,23 +182,21 @@ nonNegativeLiteral :: Parser Int
 nonNegativeLiteral = read <$> spanParserSome isDigit
 
 parseDInteger :: Parser Document
-parseDInteger = DInteger <$> (optional (spanParserMany isSpace) *> intLiteral <* parseChar '\n')
+parseDInteger = Parser $ do
+  input <- get
+  runParser ( DInteger <$> (optional (spanParserMany isSpace) *> intLiteral <* parseChar '\n')) `catchError` \e -> do
+    put input
+    throwError e
 
 stringLiteral :: Parser String
-stringLiteral = spanParserSome isAlphaNumSpace
+stringLiteral = Parser $ do
+  input <- get
+  runParser ( spanParserSome isAlphaNumSpace) `catchError` \e -> do
+    put input
+    throwError e
 
 parseDString :: Parser Document
 parseDString = DString <$> (optional (spanParserMany isSpace) *> optional (parseChar '"') *> optional (parseChar '\'') *> stringLiteral <* optional (parseChar '\'') <* optional (parseChar '"') <* parseChar '\n')
-
--- parseDMap :: Int -> Parser Document
--- parseDMap prevIndent = Parser $ do
---   input <- get
---   let indentation = ((countSpaces input) div 2)
---   if prevIndent == indentation
---     then DMap <$> some (parsePair prevIndent)
---   else if prevIndent < indentation
---     then parseDocument' prevIndent
---   else throwError $ ParseError "Error in parseDMap: unexpected indentation"
 
 parseDMap :: Int -> Parser Document    --Galimai blogai
 parseDMap prevIndent = Parser $ do
@@ -205,24 +206,45 @@ parseDMap prevIndent = Parser $ do
     else if prevIndent < indentation
       then runParser $ (parseDocument' prevIndent)
     else throwError $ ParseError $ "errorDMAP"
+{-
+key:
+- 1
+- 2
+  map:
+  - 3
+  - 4
+DMap[(key, DList[1, 2])]
 
+
+DList[DMap[(key, 123)]]
+
+-}
 parsePair :: Int -> Parser (String, Document)
 parsePair prevIndent = Parser $ do
   input <- get
   let indentation = (countSpaces input `div` 2 )
   if prevIndent == indentation then do 
-    key <- runParser $ (optional (spanParserMany isSpace) *> optional (parseChar '"') *> optional (parseChar '\'') *> stringLiteral <* optional (parseChar '\'') <* optional (parseChar '"'))
-    _ <-runParser $ parseChar ':'
+    key <- (runParser $ (optional (spanParserMany isSpace) *> optional (parseChar '"') *> optional (parseChar '\'') *> stringLiteral <* optional (parseChar '\'') <* optional (parseChar '"') <* (parseChar ':'))) `catchError` \e -> do
+      put input
+      throwError e
     _ <- runParser $ optional (parseChar '\n')
     value <- runParser $ parseDocumentInDMap prevIndent
     return (key, value)
-  else throwError $ ParseError $ "error in parsePair"
+  else throwError $ ParseError $ "error DPair"
 
 parseDList :: Int -> Parser Document
-parseDList prevIndent = undefined
+parseDList prevIndent = Parser $ do
+  input <- get
+  let indentation = countSpaces input `div` 2 in
+    if prevIndent == indentation then runParser (DList <$> some ( optional (parseChar '\n') *> removeSpaces prevIndent *> parseStr "- " *> addSpaces (prevIndent+1) *> parseListItem prevIndent))
+    else throwError $ ParseError "errorDLIST"
 
-parseDListItem :: Int -> Parser Document
-parseDListItem prevIndent = undefined
+parseListItem :: Int -> Parser Document
+parseListItem prevIndent = Parser $ do
+  input <- get
+  let indentation = countSpaces input `div` 2 - 1 in
+    if prevIndent == indentation then runParser ( optional (parseChar '\n') *> parseDocumentInList prevIndent)
+    else throwError $ ParseError "errorDLISTITEM"
 
 parseEmptyDList :: Parser Document
 parseEmptyDList = Parser $ do
