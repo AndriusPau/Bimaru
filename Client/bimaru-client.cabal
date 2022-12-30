@@ -29,6 +29,7 @@ library
       Lib2
       Lib3
       Lib4
+      Parser
       Types
   other-modules:
       Paths_bimaru_client
@@ -43,6 +44,7 @@ library
     , bytestring
     , containers
     , lens
+    , mtl
     , process
     , repline
     , scientific
@@ -72,6 +74,7 @@ executable bimaru-client-1
     , bytestring
     , containers
     , lens
+    , mtl
     , process
     , repline
     , scientific
@@ -101,6 +104,7 @@ executable bimaru-client-2
     , bytestring
     , containers
     , lens
+    , mtl
     , process
     , repline
     , scientific
@@ -130,6 +134,7 @@ executable bimaru-client-3
     , bytestring
     , containers
     , lens
+    , mtl
     , process
     , repline
     , scientific
@@ -159,6 +164,7 @@ executable bimaru-client-4
     , bytestring
     , containers
     , lens
+    , mtl
     , process
     , repline
     , scientific
@@ -189,6 +195,7 @@ test-suite bimaru-client-test
     , bytestring
     , containers
     , lens
+    , mtl
     , process
     , repline
     , scientific

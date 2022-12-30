@@ -137,22 +137,6 @@ gameStartTests = testGroup "gameStart function tests:"
         ("occupied_rows",DString "1123142420"),
         ("occupied_cols",DString "2022206033"),
         ("number_of_hints",DInteger 10)])
-
-    ,   testCase "Extra information added" $
-        show (gameStart (State []) (GameStart (DMap [("number_of_hints",DInteger 10),
-        ("additional_info1", DString "Additional info"),
-        ("occupied_cols",DList [DInteger 2,DInteger 0,DInteger 2,DInteger 2,DInteger 2,DInteger 0,DInteger 6,DInteger 0,DInteger 3,DInteger 3]),
-        ("additional_info2", DInteger 420),
-        ("occupied_rows",DList [DInteger 1,DInteger 1,DInteger 2,DInteger 3,DInteger 1,DInteger 4,DInteger 2,DInteger 4,DInteger 2,DInteger 0]),
-        ("additional_info3", DMap [("additional_info_inside_additional_info", DList [DNull, DInteger 6, DInteger 9])]),
-        ("game_setup_id",DString "3a7a8f44-b224-40ff-9c5c-58a1b60eab4b")])))
-        @?=
-        show (State [("toggles",DString ""),
-        ("hints",DString ""),
-        ("game_setup_id",DString "3a7a8f44-b224-40ff-9c5c-58a1b60eab4b"),
-        ("occupied_rows",DString "1123142420"),
-        ("occupied_cols",DString "2022206033"),
-        ("number_of_hints",DInteger 10)])
   ]
 
 hintTests :: TestTree

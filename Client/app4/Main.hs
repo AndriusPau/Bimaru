@@ -12,8 +12,9 @@ import Data.Text.Encoding.Base64 (decodeBase64)
 import Data.Text.IO as TIO ( hPutStrLn, putStrLn )
 import Data.List.Split as S ( splitOn )
 import Data.Char (isSpace)
-import Lib4 (emptyState, State (..), Document (..), gameStart, GameStart, parseDocument, render, renderDocument)
-import Types(Check, toDocument, fromDocument)
+import Lib4 (emptyState, State (..), gameStart, GameStart, render, renderDocument)
+import Parser (parseDocument, ParseError (..))
+import Types(Check, toDocument, fromDocument, Document (..))
 import Network.Wreq
     ( post, postWith, defaults, header, responseBody )
 
@@ -67,9 +68,9 @@ cmd :: String -> Repl ()
 cmd c
   | trim c == commandShow = do
     str <- Main.show
-    let gs =  Lib4.parseDocument str
+    let gs =  Parser.parseDocument str
     case gs of
-      Left err -> liftIO $ Prelude.putStrLn err
+      Left err -> liftIO $ print err
       Right info -> do
         let st = docToState info emptyState
         liftIO $ Prelude.putStrLn $ Lib4.render st
@@ -139,16 +140,20 @@ ini :: Repl ()
 ini = do
   url <- lift get
   r <- liftIO $ post url B.empty
-  let gs = Lib4.parseDocument (cs (r ^. responseBody)) >>= fromDocument
-  case (gs :: Either String Lib4.GameStart) of
-    Left msg -> liftIO $ fatal $ cs msg
-    Right d -> do
-      str <- toggle ["toggle", "1111"]
-      if str == "response: 'True'\n"
-        then liftIO solvedTrue
-        else liftIO solvedFalse
-      lift $ put url
-      liftIO $ TIO.putStrLn "Welcome to Bimaru v4. Press [TAB] for available commands list"
+  let ps = Parser.parseDocument (cs (r ^. responseBody))
+  case (ps :: Either ParseError Document) of 
+    Left st -> liftIO $ fatal $ cs $ Prelude.show st
+    Right doc -> do
+      let gs = fromDocument doc
+      case (gs :: Either String Lib4.GameStart) of
+        Left msg -> liftIO $ fatal $ cs $ Prelude.show msg
+        Right d -> do
+          str <- toggle ["toggle", "1111"]
+          if str == "response: 'True'\n"
+            then liftIO solvedTrue
+            else liftIO solvedFalse
+          lift $ put url
+          liftIO $ TIO.putStrLn "Welcome to Bimaru v4. Press [TAB] for available commands list"
 
 fatal :: Text -> IO ()
 fatal msg = do

@@ -38,6 +38,7 @@ dependencies:
 - yaml
 - vector
 - containers
+- mtl
 
 ghc-options:
 - -Wall
