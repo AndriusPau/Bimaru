@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE LambdaCase #-}
-module Lib4(emptyState, State, gameStart, GameStart, parseDocument, render, renderDocument
+module Lib4(emptyState, State (..), Document (..), gameStart, GameStart, parseDocument, render, renderDocument
     ) where
 
 import Types ( Document(..), GameStart(..))
@@ -335,9 +335,9 @@ isSpaceOrNewLine c = isSpace c || c == '\n'
 -- State - The current gamestate.
 -- String - The result string that has the whole gameboard and other information for displayment.
 render :: State -> String
--- render st = "      " ++ drawGridLineNum ++ "\n ┌────────────────────────\n │    " ++ drawGridTop st ++ "\n │\n" ++ drawGrid st [] 0
+render st = "      " ++ drawGridLineNum ++ "\n ┌────────────────────────\n │    " ++ drawGridTop st ++ "\n │\n" ++ drawGrid st [] 0
 
-render = show
+-- render = show
 
 -- This function draws the row data and the whole grid section of the map (without the top data).
 -- Meant to be used by the render function and uses drawGrid (recursively), drawGridLine functions.

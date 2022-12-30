@@ -17,7 +17,7 @@ import Data.Char (isSpace)
 -- import Lib4 ( emptyState, mkCheck, render, toggle, State )
 -- import Lib2 ( renderDocument )
 -- import Lib4 ( parseDocument, hint, gameStart, Hint, GameStart)
-import Lib4 (emptyState, State, gameStart, GameStart, parseDocument, render, renderDocument)
+import Lib4 (emptyState, State (..), Document (..), gameStart, GameStart, parseDocument, render, renderDocument)
 import Types(Check, toDocument, fromDocument)
 import Network.Wreq
     ( post, postWith, defaults, header, responseBody )
@@ -42,18 +42,21 @@ import Data.IORef (newIORef, readIORef, writeIORef, IORef)
 type Repl a = HaskelineT (StateT String IO) a
 
 {-# NOINLINE solved #-}
-solved :: IORef Bool
-solved = unsafePerformIO (newIORef False)
+solved :: IORef String
+solved = unsafePerformIO (newIORef "You're a failure, Harry!")
 
 solvedTrue :: IO ()
 solvedTrue = do
   Prelude.putStrLn "Set to True"
-  writeIORef solved True
+  writeIORef solved "You did it!"
 
 solvedFalse :: IO ()
 solvedFalse = do
   Prelude.putStrLn "Set to False"
-  writeIORef solved False
+  writeIORef solved "You're a failure, Harry!"
+
+getSolved :: IO String
+getSolved = readIORef solved
 
 commandShow :: String
 commandShow = "show"
@@ -75,14 +78,23 @@ cmd :: String -> Repl ()
 cmd c
   | trim c == commandShow = do
     str <- Main.show
-    liftIO $ Prelude.putStrLn str
-  -- | trim c == commandCheck = lift get >>= check . snd >>= liftIO . Prelude.putStrLn
+    -- liftIO $ Prelude.putStrLn str
+    let gs =  Lib4.parseDocument str
+    case gs of
+      Left err -> liftIO $ Prelude.putStrLn err
+      Right info -> do
+        let st = docToState info emptyState
+        liftIO $ Prelude.putStrLn $ Lib4.render st
+  | trim c == commandCheck = do
+    sol <- liftIO getSolved
+    if sol == "You did it!" then liftIO $ fatal $ cs (T.pack ("You won! Now get out!" :: String)) else liftIO . Prelude.putStrLn $ sol
   | commandToggle `L.isPrefixOf` trim c = do
     case tokens c of
       [_] -> liftIO $ Prelude.putStrLn $ "Illegal format, \"" ++ commandToggle ++ " expects at least one argument"
       t -> do
         str <- toggle $ tokens c
-        if str == "True"
+        -- liftIO $ print str
+        if str == "response: 'True'\n"
           then liftIO solvedTrue
           else liftIO solvedFalse
   -- "123455" => ["toggle", "12", "34", "55"]
@@ -95,6 +107,7 @@ cmd c
   --     t -> lift $ modify (\(u, s) -> (u, Lib1.toggle s (L.drop 1 t)))
 
   | trim c == commandExit = liftIO $ fatal $ cs (T.pack ("Intentional exit, \ntrust me bro." :: String))
+  -- | trim c == commandExit = break (const True) ""
 -- | commandHint `L.isPrefixOf` trim c =
   --   case tokens c of
   --     [_, str] ->
@@ -119,14 +132,11 @@ check c = do
   resp <- liftIO $ postWith opts (url ++ "/check") body
   pure $ cs $ resp ^. responseBody
 
-concatList :: [String] -> String
-concatList = Prelude.concat
-
 toggle :: [String] -> Repl String
 toggle xs = do
   url <- lift get
   let opts = defaults & header "Content-type" .~ ["text/x-yaml"]
-  let body = cs $ concatList $ tail xs :: B.ByteString
+  let body = cs $ Prelude.concat $ tail xs :: B.ByteString
   resp <- liftIO $ postWith opts (url ++ "/toggle/" ++ BS.unpack body) body
   pure $ cs $ resp ^. responseBody
 
@@ -137,6 +147,13 @@ show = do
   let body = "test" :: B.ByteString
   resp <- liftIO $ postWith opts (url ++ "/show") body
   pure $ cs $ resp ^. responseBody
+
+docToState :: Document -> State -> State
+docToState (DMap ((name, info) : xs)) (State st)
+  | name == "toggles" = docToState (DMap xs) (State ((name, info) : st))
+  | name == "occupied_rows" = docToState (DMap xs) (State ((name, info) : st))
+  | name == "occupied_cols" = docToState (DMap xs) (State ((name, info) : st))
+docToState _ st = st
 
   -- Return Bool from server maybe????? send help
   --let result = cs resp ^. responseBody
@@ -169,6 +186,10 @@ ini = do
   case (gs :: Either String Lib4.GameStart) of
     Left msg -> liftIO $ fatal $ cs msg
     Right d -> do
+      str <- toggle ["toggle", "1111"]
+      if str == "response: 'True'\n"
+        then liftIO solvedTrue
+        else liftIO solvedFalse
       lift $ put url
       liftIO $ TIO.putStrLn "Welcome to Bimaru v4. Press [TAB] for available commands list"
 

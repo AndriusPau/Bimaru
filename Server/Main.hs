@@ -36,7 +36,7 @@ app request respond = do
   let token = getToken request
   case requestMethod request of
     "POST" -> do
-      putStrLn ("\nReceived Request: \n" ++ show request ++ "\n\n")
+      -- putStrLn ("\nReceived Request: \n" ++ show request ++ "\n\n")
       if not (gameExists token)
         then do
           putStrLn "New game detected!"
@@ -73,9 +73,12 @@ app request respond = do
               let newSt = toggle st $ T.unpack $ getUrlToggle $ pathInfo request
               print newSt
               addGameSt token newSt
-              let st = getState token
+              let toggleSt = toggle newSt "0205233345273747626365666768808188949596"
+              let ch = if stateToggleNull toggleSt then "True" else "False"
+
+              -- let st = getState token
               -- print st
-              let result = object ["response" .= ("True" :: String)]
+              let result = object ["response" .= (ch :: String)]
               let responseBody = YAML.encode result
               respond $ responseLBS status200 [(hContentType, "application/x-yaml")] (BSL.fromStrict responseBody)
             else do
@@ -119,12 +122,6 @@ findGame token = do
   g <- readIORef games
   return (Map.lookup token g)
 
--- gameExists :: Token -> Bool
--- gameExists token = do
---   g <- findGame token
---   case g of
---     Just g -> True
---     Nothing -> False
 gameExists :: Token -> Bool
 gameExists token = unsafePerformIO (findGame token Data.Functor.<&> isJust)
 
@@ -185,3 +182,10 @@ getUrlToggle (name : info : xs) =
     _ -> getUrlToggle (info : xs)
 getUrlToggle (_ : _) = "test1"
 getUrlToggle _ = "test2"
+
+stateToggleNull :: State -> Bool
+stateToggleNull (State ((name, info) : xs)) =
+  if name == "toggles"
+    then info == ""
+  else stateToggleNull (State xs)
+stateToggleNull (State []) = False
