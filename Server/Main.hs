@@ -51,16 +51,10 @@ app request respond = do
           then do
             putStrLn "Not navigating blind now, are we?"
             let st = getState token
-            -- print st
             let rows = getStatePart st "occupied_rows"
-            -- print rows
             let cols = getStatePart st "occupied_cols"
-            -- print cols
             let togg = getStatePart st "toggles"
-            -- print togg
-            -- putStrLn "test1"
             let result = object ["occupied_rows" .= rows, "occupied_cols" .= cols, "toggles" .= togg]
-            -- print result
             putStrLn $ render st
             let responseBody = YAML.encode result
             respond $ responseLBS status200 [(hContentType, "application/x-yaml")] (BSL.fromStrict responseBody)
@@ -69,15 +63,13 @@ app request respond = do
             then do
               putStrLn "Don't tell people you toggle frequently..."
               let st = getState token
-              -- print st
               let newSt = toggle st $ T.unpack $ getUrlToggle $ pathInfo request
               print newSt
               addGameSt token newSt
+
+              -- Hardcoded secret (ship layout)
               let toggleSt = toggle newSt "0205233345273747626365666768808188949596"
               let ch = if stateToggleNull toggleSt then "True" else "False"
-
-              -- let st = getState token
-              -- print st
               let result = object ["response" .= (ch :: String)]
               let responseBody = YAML.encode result
               respond $ responseLBS status200 [(hContentType, "application/x-yaml")] (BSL.fromStrict responseBody)
