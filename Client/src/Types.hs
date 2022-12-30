@@ -145,7 +145,7 @@ instance FromDocument GameStart where
         | not (existsStateInfo doc "game_setup_id") = Left "Game setup Id not found."
         | not (existsStateInfo doc "occupied_cols") = Left "Occupied collumns information is missing."
         | not (existsStateInfo doc "occupied_rows") = Left "Occupied rows information is missing."
-        | not (existsStateInfo doc "number_of_hints") = Left "Hint information is missing."
+        -- | not (existsStateInfo doc "number_of_hints") = Left "Hint information is missing."
         | otherwise = Right (GameStart doc)
 
 existsStateInfo :: Document -> String -> Bool

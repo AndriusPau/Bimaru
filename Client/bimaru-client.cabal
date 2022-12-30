@@ -28,6 +28,7 @@ library
       Lib1
       Lib2
       Lib3
+      Lib4
       Types
   other-modules:
       Paths_bimaru_client

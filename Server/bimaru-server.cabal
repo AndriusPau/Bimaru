@@ -24,6 +24,7 @@ source-repository head
 
 library
   exposed-modules:
+      Lib
       Main
   other-modules:
       Paths_bimaru_server
@@ -59,6 +60,7 @@ library
 executable server
   main-is: Main.hs
   other-modules:
+      Lib
       Paths_bimaru_server
   hs-source-dirs:
       ./

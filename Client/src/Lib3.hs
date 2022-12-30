@@ -39,7 +39,7 @@ instance Alternative Parser where
 -- Returns Left String with error message on failure
 parseDocument :: String -> Either String Document
 -- parseDocument = Left . show
-parseDocument yaml = 
+parseDocument yaml =
   do
     case runParser (parseDocument' 0) yaml of
       Left err -> Left err
@@ -50,16 +50,18 @@ parseDocument yaml =
 -- containing all fields needed
 gameStart :: State -> GameStart -> State
 gameStart (State l) (GameStart doc) = gameStartRecursive (State l) doc
+-- gameStart (State l) (GameStart doc) = error $ show l ++ "\n\n\n" ++ show doc
 
 gameStartRecursive :: State -> Document -> State
 gameStartRecursive (State l) (DMap ((s, d) : xs)) =
   case s of
-    "game_setup_id" -> State (("toggles", DString []) : ("hints", DString []) : ((s, d) : l))
+    "game_setup_id" -> gameStartRecursive (State ((s, d) : l)) (DMap xs)
     "occupied_rows" -> gameStartRecursive (State ((s, DString (getDIntValue (show d) [] [])) : l)) (DMap xs)
     "occupied_cols" -> gameStartRecursive (State ((s, DString (getDIntValue (show d) [] [])) : l)) (DMap xs)
     "number_of_hints" -> gameStartRecursive (State ((s, d) : l)) (DMap xs)
-    _ -> gameStartRecursive (State l) (DMap xs)
-gameStartRecursive _ _ = emptyState
+    _ -> gameStartRecursive (State (("toggles", DString []) : ("hints", DString []) : l)) (DMap xs)
+gameStartRecursive (State l) _ = State (("toggles", DString []) : ("hints", DString []) : l)
+
 
 -- This gets a whole string of the gamestate information, which is shown at the top and the left side of the board.
 -- Meant to be used by drawGridTop, getSingleDIntValue functions and uses the getDIntValue (recursively) function.
