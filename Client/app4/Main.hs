@@ -87,7 +87,7 @@ cmd c
         liftIO $ Prelude.putStrLn $ Lib4.render st
   | trim c == commandCheck = do
     sol <- liftIO getSolved
-    if sol == "You did it!" then liftIO $ fatal $ cs (T.pack ("You won! Now get out!" :: String)) else liftIO . Prelude.putStrLn $ sol
+    if sol == "You did it!" then liftIO $ exit $ cs (T.pack ("You won! Now get out!" :: String)) else liftIO . Prelude.putStrLn $ sol
   | commandToggle `L.isPrefixOf` trim c = do
     case tokens c of
       [_] -> liftIO $ Prelude.putStrLn $ "Illegal format, \"" ++ commandToggle ++ " expects at least one argument"
@@ -106,7 +106,7 @@ cmd c
   --     [_] -> liftIO $ Prelude.putStrLn $ "Illegal format, \"" ++ commandToggle ++ " expects at least one argument"
   --     t -> lift $ modify (\(u, s) -> (u, Lib1.toggle s (L.drop 1 t)))
 
-  | trim c == commandExit = liftIO $ fatal $ cs (T.pack ("Intentional exit, \ntrust me bro." :: String))
+  | trim c == commandExit = liftIO $ exit $ cs (T.pack ("Giving up already?" :: String))
   -- | trim c == commandExit = break (const True) ""
 -- | commandHint `L.isPrefixOf` trim c =
   --   case tokens c of
@@ -196,6 +196,11 @@ ini = do
 fatal :: Text -> IO ()
 fatal msg = do
   TIO.hPutStrLn stderr $ T.concat ["ERROR: ", msg]
+  exitFailure
+
+exit :: Text -> IO ()
+exit msg = do
+  TIO.hPutStrLn stderr msg
   exitFailure
 
 final :: Repl ExitDecision
